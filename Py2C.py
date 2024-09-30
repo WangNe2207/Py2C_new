@@ -976,6 +976,9 @@ class Py2C:
                 if layer.find("input_1") >= 0:
                     found = 1
 
+                assert layer.find("conv2d_input") >= 0, "Py2C is now only supporting Keras Functional API"
+                
+
                 assert found == 1, "Py2C has not supporting " + str(self.config["layers"][i]['config']['name']) + " yet"
 
 
