@@ -9,7 +9,9 @@ bước 2: chính cái param ở file py2c.py theo model muốn chạy(hướng 
 bước 3: chạy main.py
 Bước 4: code sẽ xuất ra các đoạn code cpp và header file. Sau đó cho đoạn code được xuất ra vào project c++ để chạy(thay đổi hằng numberofpicture = số lượng input, hằng d = dimension của input.
 ********LƯU Ý: 
+
 **************************************************************************
+
 			KHÔNG HỖ TRỢ MODEL KIỂU NÀY
 model_m = Sequential()
 model_m.add(Reshape((TIME_PERIODS, num_sensors), input_shape=(input_shape,)))
@@ -21,8 +23,8 @@ model_m.add(Conv1D(160, 10, activation='relu'))
 model_m.add(GlobalAveragePooling1D())
 model_m.add(Dropout(0.5))
 model_m.add(Dense(num_classes, activation='softmax'))
-KHÔNG HỖ TRỢ MODEL KIỂU NÀY
 ***************************************************************************
+
 			CHỈ HỖ TRỢ MODEL KIỂU NÀY
 def Lenet15(shape=(32,32,3),classes=10):
     x_input = tf.keras.layers.Input(shape)
