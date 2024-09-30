@@ -3,7 +3,8 @@ Version Requirements
 Tensorflow = 2.10
 Keras = 2.10
 
-HƯỚNG DẪN SỬ DỤNG PY2C
+HƯỚNG DẪN SỬ DỤNG PY2C:
+
 bước 1: ở main.py tại dòng: pyc_lib = Py2C(".....h5"), hãy điền vào phần .... file h5 của bạn 
 
 bước 2: chính cái param ở file py2c.py theo model muốn chạy(hướng dẫn bên dưới)
