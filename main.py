@@ -1,9 +1,8 @@
 from Py2C import Py2C
-import tensorflow as tf
 # path_w= ["Conv.cc", "Conv.hh", "Pool.cc", "Pool.hh", "Dense.cc", "CNN.hh"]
 # print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 # print(tf.__version__)
-pyc_lib = Py2C("VGG9_CIFAR10_FINAL_1.h5")
+pyc_lib = Py2C("ResNet34_1.h5")
 pyc_lib.convert2C()
 pyc_lib.WriteCfile()
 # pyc_lib.del_one_file("CNN.hh")
