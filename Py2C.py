@@ -86,6 +86,7 @@ class Py2C:
         self.fxp_para = fxp_para
 
     def convert2C(self):
+        ######################################### WRITING PHARSE #######################################################
         if (len(self.model.input_shape) == 4):
             input_shape = (self.model.input_shape[1], self.model.input_shape[2], self.model.input_shape[3])
             depth = min(input_shape)
@@ -128,18 +129,30 @@ class Py2C:
                 for k in h:
                     self.Weights.append(k)
                 if self.model.layers[i].bias is None:
-                    for k in range(0, out_shape[0]):
-                        self.Weights.append(0)
+                    if activation == "sigmoid":
+                        self.act_arr = "Output_Conv[" + str(out_shape[1]) + "*" + str(out_shape[2]) + "*n+" + str(out_shape[2]) + "*x+y]=1/(1 + exp(-s));"
+                    elif activation == "tanh":
+                        self.act_arr = "Output_Conv[" + str(out_shape[1]) + "*" + str(out_shape[2]) + "*n+" + str(out_shape[2]) + "*x+y]=(2/(1 + exp(-2*s)))-1;"
+                    elif activation == "relu":
+                        self.act_arr = "if (s < 0) Output_Conv[" + str(out_shape[1]) + "*" + str(out_shape[2]) + "*n+" + str(out_shape[2]) + "*x+y]=0; else Output_Conv[" + str(out_shape[1]) + "*" + str(out_shape[2]) + "*n+" + str(out_shape[2]) + "*x+y]=s;"
+                    else:
+                        self.act_arr = "Output_Conv[" + str(out_shape[1]) + "*" + str(out_shape[2]) + "*n+" + str(
+                            out_shape[2]) + "*x+y]=s;"
                 else:
                     for k in self.model.layers[i].get_weights()[1]:
                         self.Weights.append(k)
-                if activation == "relu":
-                    self.act_arr = "if ((s+bias[n])<0) Output_Conv[" + str(out_shape[1]) + "*" + str(
-                        out_shape[2]) + "*n+" + str(out_shape[2]) + "*x+y]=0; else Output_Conv[" + str(
-                        out_shape[1]) + "*" + str(out_shape[2]) + "*n+" + str(out_shape[2]) + "*x+y]=s+bias[n];"
-                else:
-                    self.act_arr = "Output_Conv[" + str(out_shape[1]) + "*" + str(out_shape[2]) + "*n+" + str(
-                        out_shape[2]) + "*x+y]=s+bias[n];"
+                    if activation == "sigmoid":
+                        self.act_arr = "Output_Conv[" + str(out_shape[1]) + "*" + str(out_shape[2]) + "*n+" + str(out_shape[2]) + "*x+y]=1/(1 + exp(-(s+bias[n])));"
+                    elif activation == "tanh":
+                        self.act_arr = "Output_Conv[" + str(out_shape[1]) + "*" + str(out_shape[2]) + "*n+" + str(out_shape[2]) + "*x+y]=(2/(1 + exp(-2*(s+bias[n]))))-1;"
+                    elif activation == "relu":
+                        self.act_arr = "if ((s+bias[n])<0) Output_Conv[" + str(out_shape[1]) + "*" + str(
+                            out_shape[2]) + "*n+" + str(out_shape[2]) + "*x+y]=0; else Output_Conv[" + str(
+                            out_shape[1]) + "*" + str(out_shape[2]) + "*n+" + str(out_shape[2]) + "*x+y]=s+bias[n];"
+                    else:
+                        self.act_arr = "Output_Conv[" + str(out_shape[1]) + "*" + str(out_shape[2]) + "*n+" + str(
+                            out_shape[2]) + "*x+y]=s+bias[n];"
+
                 if self.type == "fxp" and self.index2D == 0:
                     self.fxp_inc = self.fxp_include
                 else:
@@ -202,15 +215,12 @@ class Py2C:
                     self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
                         'name'] + "[" + str(
                         out_shape[0] * out_shape[1] * out_shape[2]) + "];\n"
-                    source_Conv_cc = self.fxp_inc + "void Conv2D_" + str(
-                        self.index2D) + "(" + self.type + " Input_Conv[" + str(int(
-                        in_shape_if_padding[0] * in_shape_if_padding[1] * in_shape_if_padding[
-                            2])) + "]," + self.type + " Output_Conv[" + str(
-                        out_shape[0] * out_shape[1] * out_shape[2]) + "], " + self.type + " bias[" + str(
-                        out_shape[0]) + "], " + self.type + " kernel[" + str(
-                        kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[
-                            3]) + "]){\n\tloop_for_channel2D_" + str(
-                        self.index2D) + ":\n\tint stride = " + str(stride) + ";\n\tfor (int n = 0; n < " + str(
+                    if self.model.layers[i].bias is None:
+                        source_Conv_cc = (self.fxp_inc + "void Conv2D_" + str(self.index2D) + "(" + self.type + " Input_Conv[" + str(int(in_shape_if_padding[0] * in_shape_if_padding[1] * in_shape_if_padding[2])) + "]," + self.type + " Output_Conv[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "], " + self.type + " kernel[" + str(kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[3]) + "])")
+                    else:
+                        source_Conv_cc = (self.fxp_inc + "void Conv2D_" + str(self.index2D) + "(" + self.type + " Input_Conv[" + str(int(in_shape_if_padding[0] * in_shape_if_padding[1] * in_shape_if_padding[2])) + "]," + self.type + " Output_Conv[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "], " + self.type + " bias[" + str(out_shape[0]) + "], " + self.type + " kernel[" + str(kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[3]) + "])")
+
+                    source_Conv_cc+= ("{\n\tloop_for_channel2D_" + str(self.index2D) + ":\n\tint stride = " + str(stride) + ";\n\tfor (int n = 0; n < " + str(
                         out_shape[0]) + "; n++){\n\t\tloop_for_bp2D_" + str(
                         self.index2D) + ":\n\t\tfor (int x = 0; x < " + str(
                         out_shape[1]) + "; x++){\n\t\t\tloop_for_ap2D_" + str(
@@ -227,26 +237,29 @@ class Py2C:
                         kernel_shape[3]) + "*k+" + str(
                         kernel_shape[3]) + "*i+j])*(Input_Conv[" + str(int(in_shape_if_padding[1])) + "*" + str(
                         int(in_shape_if_padding[2])) + "*k+" + str(int(in_shape_if_padding[
-                                                                           2])) + "*(i+x*stride)+j+y*stride]);}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\t" + self.act_arr + "\n\t\t\t}\n\t\t}\n\t}\n}\n"
-                    source_Conv_hh = self.fxp_inc + "void Conv2D_" + str(
-                        self.index2D) + "(" + self.type + " Input_Conv[" + str(int(
-                        in_shape_if_padding[0] * in_shape_if_padding[1] * in_shape_if_padding[
-                            2])) + "]," + self.type + " Output_Conv[" + str(
-                        out_shape[0] * out_shape[1] * out_shape[2]) + "], " + self.type + " bias[" + str(
-                        out_shape[0]) + "], " + self.type + " kernel[" + str(
-                        kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[3]) + "]);\n"
+                                                                           2])) + "*(i+x*stride)+j+y*stride]);}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\t" + self.act_arr + "\n\t\t\t}\n\t\t}\n\t}\n}\n")
+
+                    if self.model.layers[i].bias is None:
+                        source_Conv_hh = self.fxp_inc + "void Conv2D_" + str(self.index2D) + "(" + self.type + " Input_Conv[" + str(int(in_shape_if_padding[0] * in_shape_if_padding[1] * in_shape_if_padding[2])) + "]," + self.type + " Output_Conv[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "], " + self.type + " kernel[" + str(kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[3]) + "]);\n"
+                    else:
+                        source_Conv_hh = self.fxp_inc + "void Conv2D_" + str(
+                            self.index2D) + "(" + self.type + " Input_Conv[" + str(int(
+                            in_shape_if_padding[0] * in_shape_if_padding[1] * in_shape_if_padding[
+                                2])) + "]," + self.type + " Output_Conv[" + str(
+                            out_shape[0] * out_shape[1] * out_shape[2]) + "], " + self.type + " bias[" + str(
+                            out_shape[0]) + "], " + self.type + " kernel[" + str(
+                            kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[3]) + "]);\n"
+
                 else:
                     self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
                         'name'] + "[" + str(
                         out_shape[0] * out_shape[1] * out_shape[2]) + "];\n"
-                    source_Conv_cc = self.fxp_inc + "void Conv2D_" + str(
-                        self.index2D) + "(" + self.type + " Input_Conv[" + str(
-                        in_shape[0] * in_shape[1] * in_shape[2]) + "]," + self.type + " Output_Conv[" + str(
-                        out_shape[0] * out_shape[1] * out_shape[2]) + "], " + self.type + " bias[" + str(
-                        out_shape[0]) + "], " + self.type + " kernel[" + str(
-                        kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[
-                            3]) + "]){\n\tint stride = " + str(stride) + ";\n\tloop_for_channel2D_" + str(
-                        self.index2D) + ":\n\tfor (int n = 0; n < " + str(
+                    if self.model.layers[i].bias is None:
+                        source_Conv_cc = (self.fxp_inc + "void Conv2D_" + str(self.index2D) + "(" + self.type + " Input_Conv[" + str(in_shape[0] * in_shape[1] * in_shape[2]) + "]," + self.type + " Output_Conv[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "], " + self.type + " kernel[" + str(kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[3]) + "])")
+                    else:
+                        source_Conv_cc = (self.fxp_inc + "void Conv2D_" + str(self.index2D) + "(" + self.type + " Input_Conv[" + str(in_shape[0] * in_shape[1] * in_shape[2]) + "]," + self.type + " Output_Conv[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "], " + self.type + " bias[" + str(out_shape[0]) + "], " + self.type + " kernel[" + str(kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[3]) + "])")
+
+                    source_Conv_cc+= ("{\n\tint stride = " + str(stride) + ";\n\tloop_for_channel2D_" + str(self.index2D) + ":\n\tfor (int n = 0; n < " + str(
                         out_shape[0]) + "; n++){\n\t\tloop_for_bp2D_" + str(
                         self.index2D) + ":\n\t\tfor (int x = 0; x < " + str(
                         out_shape[1]) + "; x++){\n\t\t\tloop_for_ap2D_" + str(
@@ -265,24 +278,27 @@ class Py2C:
                         in_shape[1]) + "*" + str(
                         in_shape[2]) + "*k+" + str(
                         in_shape[
-                            2]) + "*(i+x*stride)+j+y*stride]);}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\t" + self.act_arr + "\n\t\t\t}\n\t\t}\n\t}\n}\n"
-                    source_Conv_hh = self.fxp_inc + "void Conv2D_" + str(
-                        self.index2D) + "(" + self.type + " Input_Conv[" + str(
-                        in_shape[0] * in_shape[1] * in_shape[2]) + "]," + self.type + " Output_Conv[" + str(
-                        out_shape[0] * out_shape[1] * out_shape[2]) + "], " + self.type + " bias[" + str(
-                        out_shape[0]) + "], " + self.type + " kernel[" + str(
-                        kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[3]) + "]);\n"
+                            2]) + "*(i+x*stride)+j+y*stride]);}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\t" + self.act_arr + "\n\t\t\t}\n\t\t}\n\t}\n}\n")
+
+                    if self.model.layers[i].bias is None:
+                        source_Conv_hh = self.fxp_inc + "void Conv2D_" + str(self.index2D) + "(" + self.type + " Input_Conv[" + str(in_shape[0] * in_shape[1] * in_shape[2]) + "]," + self.type + " Output_Conv[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "], " + self.type + " kernel[" + str(kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[3]) + "]);\n"
+                    else:
+                        source_Conv_hh = self.fxp_inc + "void Conv2D_" + str(
+                            self.index2D) + "(" + self.type + " Input_Conv[" + str(
+                            in_shape[0] * in_shape[1] * in_shape[2]) + "]," + self.type + " Output_Conv[" + str(
+                            out_shape[0] * out_shape[1] * out_shape[2]) + "], " + self.type + " bias[" + str(
+                            out_shape[0]) + "], " + self.type + " kernel[" + str(
+                            kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[3]) + "]);\n"
 
                 self.full_source_Conv_cc.append(source_Conv_cc)
                 self.full_source_Conv_hh.append(source_Conv_hh)
-                self.full_source_CNN_cc.append(
-                    ["\tConv2D_" + str(self.index2D) + "(", self.config["layers"][i]['config']['name'],
-                     "&Weights[" + str(
-                         self.cnt_param + kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[
-                             3]) + "]",
-                     "&Weights[" + str(self.cnt_param) + "]"])
-                self.cnt_param += kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[3] + out_shape[
-                    0]
+                if self.model.layers[i].bias is None:
+                    self.full_source_CNN_cc.append(["\tConv2D_" + str(self.index2D) + "(", self.config["layers"][i]['config']['name'], "&Weights[" + str(self.cnt_param) + "]"])
+                    self.cnt_param += kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[3]
+                else:
+                    self.full_source_CNN_cc.append(
+                        ["\tConv2D_" + str(self.index2D) + "(", self.config["layers"][i]['config']['name'],"&Weights[" + str(self.cnt_param + kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[3]) + "]", "&Weights[" + str(self.cnt_param) + "]"])
+                    self.cnt_param += kernel_shape[0] * kernel_shape[1] * kernel_shape[2] * kernel_shape[3] + out_shape[0]
                 self.index2D += 1
 
             # convert conv1d layer into c array that act like an conv1d layer
@@ -294,24 +310,38 @@ class Py2C:
                 kernel_shape = self.model.layers[i].get_weights()[0].T.shape
                 h = self.model.layers[i].get_weights()[0].T.reshape(
                     kernel_shape[0] * kernel_shape[1] * kernel_shape[2])
-                # print(i - 1)
+
                 for k in h:
                     self.Weights.append(k)
                 if self.model.layers[i].bias is None:
-                    for k in range(0, out_shape[0]):
-                        self.Weights.append(0)
+                    if activation == "sigmoid":
+                        self.act_arr = "Output_Conv[" + str(out_shape[1]) + "*n+y]=1/(1 + exp(-s));"
+                    elif activation == "tanh":
+                        self.act_arr = "Output_Conv[" + str(out_shape[1]) + "*n+y]=(2/(1 + exp(-2*s)))-1;"
+                    elif activation == "relu":
+                        self.act_arr = "if (s < 0) Output_Conv[" + str(out_shape[1]) + "*n+y]=0; else Output_Conv[" + str(out_shape[1]) + "*n+y]=s;"
+                    else:
+                        self.act_arr = "Output_Conv[" + str(out_shape[1]) + "*n+y]=s;"
                 else:
                     for k in self.model.layers[i].get_weights()[1]:
                         self.Weights.append(k)
-                if activation == "relu":
-                    self.act_arr = "if ((s+bias[n])<0) Output_Conv[" + str(
-                        out_shape[1]) + "*n+y]=0; else Output_Conv[" + str(out_shape[1]) + "*n+y]=s+bias[n];"
-                else:
-                    self.act_arr = "Output_Conv[" + str(out_shape[1]) + "*n+y]=s+bias[n];"
+                    if activation == "sigmoid":
+                        self.act_arr = "Output_Conv[" + str(out_shape[1]) + "*n+y]=1/(1 + exp(-(s+bias[n])));"
+                    elif activation == "tanh":
+                        self.act_arr = "Output_Conv[" + str(out_shape[1]) + "*n+y]=(2/(1 + exp(-2*(s+bias[n]))))-1;"
+                    elif activation == "relu":
+                        self.act_arr = "if ((s+bias[n])<0) Output_Conv[" + str(out_shape[1]) + "*n+y]=0; else Output_Conv[" + str(out_shape[1]) + "*n+y]=s+bias[n];"
+                    else:
+                        self.act_arr = "Output_Conv[" + str(out_shape[1]) + "*n+y]=s+bias[n];"
+
                 if self.type == "fxp" and self.index == 0:
                     self.fxp_inc = self.fxp_include
                 else:
                     self.fxp_inc = ""
+                if activation == "sigmoid" or activation == "tanh":
+                    self.fxp_inc += "#include <cmath>\n"
+                else:
+                    self.fxp_inc += ""
                 stride = self.model.layers[i].strides[0]
                 if self.config["layers"][i]['config']['padding'] == 'same':
                     padding_left = math.floor(((out_shape[1] - 1) * stride - (in_shape[1] - (kernel_shape[2] - 1) - 1)) / 2)
@@ -345,12 +375,12 @@ class Py2C:
                         'name'] + "[" + str(
                         out_shape[0] *
                         out_shape[1]) + "];\n"
-                    source_Conv_cc = self.fxp_inc + "void Conv1D_" + str(
-                        self.index) + "(" + self.type + " Input_Conv[" + str(
-                        in_shape_if_padding[0] * in_shape_if_padding[1]) + "]," + self.type + " Output_Conv[" + str(
-                        out_shape[0] * out_shape[1]) + "], " + self.type + " bias[" + str(
-                        out_shape[0]) + "], " + self.type + " kernel[" + str(
-                        kernel_shape[0] * kernel_shape[1] * kernel_shape[2]) + "]){\n\tloop_for_channel_" + str(
+                    if self.model.layers[i].bias is None:
+                        source_Conv_cc = (self.fxp_inc + "void Conv1D_" + str(self.index) + "(" + self.type + " Input_Conv[" + str(in_shape_if_padding[0] * in_shape_if_padding[1]) + "]," + self.type + " Output_Conv[" + str(out_shape[0] * out_shape[1]) + "], " + self.type + " kernel[" + str(kernel_shape[0] * kernel_shape[1] * kernel_shape[2]) + "])")
+                    else:
+                        source_Conv_cc = (self.fxp_inc + "void Conv1D_" + str(self.index) + "(" + self.type + " Input_Conv[" + str(in_shape_if_padding[0] * in_shape_if_padding[1]) + "]," + self.type + " Output_Conv[" + str(out_shape[0] * out_shape[1]) + "], " + self.type + " bias[" + str(out_shape[0]) + "], " + self.type + " kernel[" + str(kernel_shape[0] * kernel_shape[1] * kernel_shape[2]) + "])")
+
+                    source_Conv_cc += ("{\n\tloop_for_channel_" + str(
                         self.index) + ":\n\tint stride = " + str(stride) + ";\n\tfor (int n = 0; n < " + str(
                         out_shape[0]) + "; n++){\n\t\tloop_for_ap_" + str(
                         self.index) + ":\n\t\tfor (int y = 0; y < " + str(
@@ -361,24 +391,27 @@ class Py2C:
                         kernel_shape[2]) + "; j++){\n\t\t\t\t\ts=s+(kernel[" + str(kernel_shape[1]) + "*" + str(
                         kernel_shape[2]) + "*n+" + str(kernel_shape[2]) + "*k+j])*(Input_Conv[" + str(
                         in_shape_if_padding[
-                            1]) + "*k+j+y*stride]);}\n\t\t\t}\n\t\t\t" + self.act_arr + "\n\t\t}\n\t}\n}\n"
-                    source_Conv_hh = self.fxp_inc + "void Conv1D_" + str(
-                        self.index) + "(" + self.type + " Input_Conv[" + str(
-                        in_shape_if_padding[0] * in_shape_if_padding[1]) + "]," + self.type + " Output_Conv[" + str(
-                        out_shape[0] * out_shape[1]) + "], " + self.type + " bias[" + str(
-                        out_shape[0]) + "], " + self.type + " kernel[" + str(
-                        kernel_shape[0] * kernel_shape[1] * kernel_shape[2]) + "]);\n"
+                            1]) + "*k+j+y*stride]);}\n\t\t\t}\n\t\t\t" + self.act_arr + "\n\t\t}\n\t}\n}\n")
+                    if self.model.layers[i].bias is None:
+                        source_Conv_hh = self.fxp_inc + "void Conv1D_" + str(self.index) + "(" + self.type + " Input_Conv[" + str(in_shape_if_padding[0] * in_shape_if_padding[1]) + "]," + self.type + " Output_Conv[" + str(out_shape[0] * out_shape[1]) + "], " + self.type + " kernel[" + str(kernel_shape[0] * kernel_shape[1] * kernel_shape[2]) + "]);\n"
+                    else:
+                        source_Conv_hh = self.fxp_inc + "void Conv1D_" + str(
+                            self.index) + "(" + self.type + " Input_Conv[" + str(
+                            in_shape_if_padding[0] * in_shape_if_padding[1]) + "]," + self.type + " Output_Conv[" + str(
+                            out_shape[0] * out_shape[1]) + "], " + self.type + " bias[" + str(
+                            out_shape[0]) + "], " + self.type + " kernel[" + str(
+                            kernel_shape[0] * kernel_shape[1] * kernel_shape[2]) + "]);\n"
                 else:
                     self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
                         'name'] + "[" + str(
                         out_shape[0] *
                         out_shape[1]) + "];\n"
-                    source_Conv_cc = self.fxp_inc + "void Conv1D_" + str(
-                        self.index) + "(" + self.type + " Input_Conv[" + str(
-                        in_shape[0] * in_shape[1]) + "]," + self.type + " Output_Conv[" + str(
-                        out_shape[0] * out_shape[1]) + "], " + self.type + " bias[" + str(
-                        out_shape[0]) + "], " + self.type + " kernel[" + str(
-                        kernel_shape[0] * kernel_shape[1] * kernel_shape[2]) + "]){\n\tloop_for_channel_" + str(
+                    if self.model.layers[i].bias is None:
+                        source_Conv_cc = (self.fxp_inc + "void Conv1D_" + str(self.index) + "(" + self.type + " Input_Conv[" + str(in_shape[0] * in_shape[1]) + "]," + self.type + " Output_Conv[" + str(out_shape[0] * out_shape[1]) + "], " + self.type + " kernel[" + str(kernel_shape[0] * kernel_shape[1] * kernel_shape[2]) + "])")
+                    else:
+                        source_Conv_cc = (self.fxp_inc + "void Conv1D_" + str(self.index) + "(" + self.type + " Input_Conv[" + str(in_shape[0] * in_shape[1]) + "]," + self.type + " Output_Conv[" + str(out_shape[0] * out_shape[1]) + "], " + self.type + " bias[" + str(out_shape[0]) + "], " + self.type + " kernel[" + str(kernel_shape[0] * kernel_shape[1] * kernel_shape[2]) + "])")
+
+                    source_Conv_cc += ("{\n\tloop_for_channel_" + str(
                         self.index) + ":\n\tint stride = " + str(stride) + ";\n\tfor (int n = 0; n < " + str(
                         out_shape[0]) + "; n++){\n\t\tloop_for_ap_" + str(
                         self.index) + ":\n\t\tfor (int y = 0; y < " + str(
@@ -390,21 +423,31 @@ class Py2C:
                         kernel_shape[2]) + "*n+" + str(
                         kernel_shape[
                             2]) + "*k+j])*(Input_Conv[" + str(
-                        in_shape[1]) + "*k+j+y*stride]);}\n\t\t\t}\n\t\t\t" + self.act_arr + "\n\t\t}\n\t}\n}\n"
-                    source_Conv_hh = self.fxp_inc + "void Conv1D_" + str(
-                        self.index) + "(" + self.type + " Input_Conv[" + str(
-                        in_shape[0] * in_shape[1]) + "]," + self.type + " Output_Conv[" + str(
-                        out_shape[0] * out_shape[1]) + "], " + self.type + " bias[" + str(
-                        out_shape[0]) + "], " + self.type + " kernel[" + str(
-                        kernel_shape[0] * kernel_shape[1] * kernel_shape[2]) + "]);\n"
+                        in_shape[1]) + "*k+j+y*stride]);}\n\t\t\t}\n\t\t\t" + self.act_arr + "\n\t\t}\n\t}\n}\n")
+
+                    if self.model.layers[i].bias is None:
+                        source_Conv_hh = self.fxp_inc + "void Conv1D_" + str(self.index) + "(" + self.type + " Input_Conv[" + str(in_shape[0] * in_shape[1]) + "]," + self.type + " Output_Conv[" + str(out_shape[0] * out_shape[1]) + "], " + self.type + " kernel[" + str(kernel_shape[0] * kernel_shape[1] * kernel_shape[2]) + "]);\n"
+                    else:
+                        source_Conv_hh = self.fxp_inc + "void Conv1D_" + str(
+                            self.index) + "(" + self.type + " Input_Conv[" + str(
+                            in_shape[0] * in_shape[1]) + "]," + self.type + " Output_Conv[" + str(
+                            out_shape[0] * out_shape[1]) + "], " + self.type + " bias[" + str(
+                            out_shape[0]) + "], " + self.type + " kernel[" + str(
+                            kernel_shape[0] * kernel_shape[1] * kernel_shape[2]) + "]);\n"
 
                 self.full_source_Conv_cc.append(source_Conv_cc)
                 self.full_source_Conv_hh.append(source_Conv_hh)
-                self.full_source_CNN_cc.append(
-                    ["\tConv1D_" + str(self.index) + "(", self.config["layers"][i]['config']['name'], "&Weights[" + str(
-                        self.cnt_param + kernel_shape[0] * kernel_shape[1] * kernel_shape[2]) + "]",
-                     "&Weights[" + str(self.cnt_param) + "]"])
-                self.cnt_param += kernel_shape[0] * kernel_shape[1] * kernel_shape[2] + out_shape[0]
+                if self.model.layers[i].bias is None:
+                    self.full_source_CNN_cc.append(
+                        ["\tConv1D_" + str(self.index) + "(", self.config["layers"][i]['config']['name'], "&Weights[" + str(self.cnt_param) + "]"])
+                    self.cnt_param += kernel_shape[0] * kernel_shape[1] * kernel_shape[2]
+                else:
+                    self.full_source_CNN_cc.append(
+                        ["\tConv1D_" + str(self.index) + "(", self.config["layers"][i]['config']['name'], "&Weights[" + str(
+                            self.cnt_param + kernel_shape[0] * kernel_shape[1] * kernel_shape[2]) + "]",
+                         "&Weights[" + str(self.cnt_param) + "]"])
+                    self.cnt_param += kernel_shape[0] * kernel_shape[1] * kernel_shape[2] + out_shape[0]
+
                 self.index += 1
 
             if (layer.find("add") >= 0) and (layer.find("pad") < 0):
@@ -470,7 +513,6 @@ class Py2C:
                             size) + " + i] = input_" + str(k) + "[i];\n\t}\n"
                         argument += str(self.type) + " input_" + str(k) + "[" + str(size) + "], "
 
-                    print("test")
 
                 self.call_function += "\t" + str(self.type) + " " + self.config["layers"][i]['config'][
                     'name'] + "[" + str(
@@ -613,7 +655,7 @@ class Py2C:
                     self.indexBatch += 1
                     self.cnt_param += len(gamma) + len(beta) + len(moving_mean) + len(moving_variance)
 
-                # 1D, In Convolutional layer
+                # 2D, In Convolutional layer
                 if (len(self.model.layers[i].input.shape) == 3):
                     in_shape = (self.model.layers[i].input.shape[height_index], self.model.layers[i].input.shape[width_index])
                     out_shape = (self.model.layers[i].output.shape[height_index], self.model.layers[i].output.shape[width_index])
@@ -754,8 +796,6 @@ class Py2C:
                     else:
                         self.fxp_inc = ""
 
-                    padding = (in_shape[1] - poolSize) / strides
-
                     def find_smallest_pad(i, k, s):
                         p = 0
                         while True:
@@ -763,7 +803,7 @@ class Py2C:
                                 return p
                             p += 0.5
 
-                    if isinstance(padding, int):
+                    if self.config["layers"][i]['config']['padding'] == 'valid':
                         self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config']['name'] + "[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "];\n"
                         source_Pool_cc = self.fxp_inc + "void average_Pool2D_" + str(
                             self.index_P2D) + "(" + self.type + " input_AveragePooling[" + str(
@@ -881,35 +921,35 @@ class Py2C:
                             self.full_source_Pool_hh.append(source_Pool_hh)
                             self.full_source_Pool_cc.append(source_pad_pool_cc)
                             self.full_source_Pool_hh.append(source_pad_pool_hh)
-                        else:
-                            self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
-                                'name'] + "[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "];\n"
-                            source_Pool_cc = self.fxp_inc + "void average_Pool2D_" + str(
-                                self.index_P2D) + "(" + self.type + " input_AveragePooling[" + str(
-                                in_shape[0] * in_shape[1] * in_shape[
-                                    2]) + "], " + self.type + " output_AveragePooling[" + str(
-                                out_shape[0] * out_shape[1] * out_shape[2]) + "]){\n\tint PoolSize = " + str(
-                                poolSize) + ";\n\tint stride = " + str(
-                                strides) + ";\n\tint index = 0;\n\tfor (int i = 0; i < " + str(
-                                out_shape[0]) + "; i++){\n\t\tindex = 0;\n\t\tfor (int z = 0; z < " + str(
-                                out_shape[1]) + "; z++){\n\t\t\tfor (int y = 0; y < " + str(
-                                out_shape[2]) + "; y++){\n\t\t\t\t" + str(
-                                self.type) + " Average = 0;\n\t\t\t\t" + str(
-                                self.type) + " Pool_value = 0;\n\t\t\t\tfor (int h = 0; h < PoolSize; h++){\n\t\t\t\t\tfor (int w = 0; w < PoolSize; w++){\n\t\t\t\t\t\tint Pool_index = " + str(
-                                in_shape[1]) + " * " + str(in_shape[2]) + " * i + " + str(
-                                in_shape[1]) + " * h + " + str(in_shape[
-                                                                   2]) + " * stride * z + w + y * stride;\n\t\t\t\t\t\tPool_value += input_AveragePooling[Pool_index];" + "\n\t\t\t\t\t\tAverage = Pool_value / " + str(
-                                poolSize * poolSize) + ";\n\t\t\t\t\t}\n\t\t\t\t}" + "\n\t\t\t\tint outIndex = " + str(
-                                out_shape[1]) + " * " + str(out_shape[
-                                                                2]) + " * i + index;\n\t\t\t\toutput_AveragePooling[outIndex] = Average;\n\t\t\t\tindex++;" + "\n\t\t\t}\n\t\t}\n\t}\n}\n"
-                            source_Pool_hh = self.fxp_inc + "void average_Pool2D_" + str(
-                                self.index_P2D) + "(" + self.type + " input_AveragePooling[" + str(in_shape[0] * (
-                                    in_shape[1] + 2)) + "], " + self.type + " output_AveragePooling[" + str(
-                                out_shape[0] * out_shape[1]) + "]);\n"
-                            self.full_source_CNN_cc.append(["\taverage_Pool2D_" + str(self.index_P2D) + "(",
-                                                            self.config["layers"][i]['config']['name'], "", ""])
-                            self.full_source_Pool_cc.append(source_Pool_cc)
-                            self.full_source_Pool_hh.append(source_Pool_hh)
+                        # else:
+                        #     self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
+                        #         'name'] + "[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "];\n"
+                        #     source_Pool_cc = self.fxp_inc + "void average_Pool2D_" + str(
+                        #         self.index_P2D) + "(" + self.type + " input_AveragePooling[" + str(
+                        #         in_shape[0] * in_shape[1] * in_shape[
+                        #             2]) + "], " + self.type + " output_AveragePooling[" + str(
+                        #         out_shape[0] * out_shape[1] * out_shape[2]) + "]){\n\tint PoolSize = " + str(
+                        #         poolSize) + ";\n\tint stride = " + str(
+                        #         strides) + ";\n\tint index = 0;\n\tfor (int i = 0; i < " + str(
+                        #         out_shape[0]) + "; i++){\n\t\tindex = 0;\n\t\tfor (int z = 0; z < " + str(
+                        #         out_shape[1]) + "; z++){\n\t\t\tfor (int y = 0; y < " + str(
+                        #         out_shape[2]) + "; y++){\n\t\t\t\t" + str(
+                        #         self.type) + " Average = 0;\n\t\t\t\t" + str(
+                        #         self.type) + " Pool_value = 0;\n\t\t\t\tfor (int h = 0; h < PoolSize; h++){\n\t\t\t\t\tfor (int w = 0; w < PoolSize; w++){\n\t\t\t\t\t\tint Pool_index = " + str(
+                        #         in_shape[1]) + " * " + str(in_shape[2]) + " * i + " + str(
+                        #         in_shape[1]) + " * h + " + str(in_shape[
+                        #                                            2]) + " * stride * z + w + y * stride;\n\t\t\t\t\t\tPool_value += input_AveragePooling[Pool_index];" + "\n\t\t\t\t\t\tAverage = Pool_value / " + str(
+                        #         poolSize * poolSize) + ";\n\t\t\t\t\t}\n\t\t\t\t}" + "\n\t\t\t\tint outIndex = " + str(
+                        #         out_shape[1]) + " * " + str(out_shape[
+                        #                                         2]) + " * i + index;\n\t\t\t\toutput_AveragePooling[outIndex] = Average;\n\t\t\t\tindex++;" + "\n\t\t\t}\n\t\t}\n\t}\n}\n"
+                        #     source_Pool_hh = self.fxp_inc + "void average_Pool2D_" + str(
+                        #         self.index_P2D) + "(" + self.type + " input_AveragePooling[" + str(in_shape[0] * (
+                        #             in_shape[1] + 2)) + "], " + self.type + " output_AveragePooling[" + str(
+                        #         out_shape[0] * out_shape[1]) + "]);\n"
+                        #     self.full_source_CNN_cc.append(["\taverage_Pool2D_" + str(self.index_P2D) + "(",
+                        #                                     self.config["layers"][i]['config']['name'], "", ""])
+                        #     self.full_source_Pool_cc.append(source_Pool_cc)
+                        #     self.full_source_Pool_hh.append(source_Pool_hh)
 
                     self.index_P2D += 1
 
@@ -929,7 +969,6 @@ class Py2C:
                     else:
                         self.fxp_inc = ""
 
-                    padding = (in_shape[1] - poolSize) / strides
 
                     def find_smallest_pad(i, k, s):
                         p = 0
@@ -938,7 +977,7 @@ class Py2C:
                                 return p
                             p += 0.5
 
-                    if isinstance(padding, int):
+                    if self.config["layers"][i]['config']['padding'] == 'valid':
                         self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
                             'name'] + "[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "];\n"
                         source_Pool_cc = self.fxp_inc + "void Max_Pool2D_" + str(
@@ -1047,32 +1086,32 @@ class Py2C:
                             self.full_source_Pool_hh.append(source_Pool_hh)
                             self.full_source_Pool_cc.append(source_pad_pool_cc)
                             self.full_source_Pool_hh.append(source_pad_pool_hh)
-                        else:
-                            self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
-                                'name'] + "[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "];\n"
-                            source_Pool_cc = self.fxp_inc + "void Max_Pool2D_" + str(
-                                self.index_P2D) + "(" + self.type + " input_MaxPooling[" + str(
-                                in_shape[0] * in_shape[1] * in_shape[
-                                    2]) + "], " + self.type + " output_MaxPooling[" + str(
-                                out_shape[0] * out_shape[1] * out_shape[2]) + "]){\n\tint PoolSize = " + str(
-                                poolSize) + ";\n\tint stride = " + str(
-                                strides) + ";\n\tint index = 0;\n\tfor (int i = 0; i < " + str(
-                                out_shape[0]) + "; i++){\n\t\tindex = 0;\n\t\tfor (int z = 0; z < " + str(
-                                out_shape[1]) + "; z++){\n\t\t\tfor (int y = 0; y < " + str(out_shape[
-                                                                                                2]) + "; y++){\n\t\t\t\t" + self.type + " max_c = -10;\n\t\t\t\tfor (int h = 0; h < PoolSize; h++){\n\t\t\t\t\tfor (int w = 0; w < PoolSize; w++){\n\t\t\t\t\t\tint Pool_index = " + str(
-                                in_shape[1]) + " * " + str(in_shape[2]) + " * i + " + str(
-                                in_shape[1]) + " * h + " + str(in_shape[
-                                                                   2]) + " * stride * z + w + y * stride;\n\t\t\t\t\t\t" + self.type + " Pool_value = input_MaxPooling[Pool_index];" + "\n\t\t\t\t\t\tif (Pool_value >= max_c) max_c = Pool_value;" + "\n\t\t\t\t\t}\n\t\t\t\t}" + "\n\t\t\t\tint outIndex = " + str(
-                                out_shape[1]) + " * " + str(out_shape[
-                                                                2]) + " * i + index;\n\t\t\t\toutput_MaxPooling[outIndex] = max_c;\n\t\t\t\tindex++;" + "\n\t\t\t}\n\t\t}\n\t}\n}\n"
-                            source_Pool_hh = self.fxp_inc + "void Max_Pool2D_" + str(
-                                self.index_P2D) + "(" + self.type + " input_MaxPooling[" + str(
-                                in_shape[0] * (in_shape[1] + 2)) + "], " + self.type + " output_MaxPooling[" + str(
-                                out_shape[0] * out_shape[1]) + "]);\n"
-                            self.full_source_CNN_cc.append(["\tMax_Pool2D_" + str(self.index_P2D) + "(",
-                                                            self.config["layers"][i]['config']['name'], "", ""])
-                            self.full_source_Pool_cc.append(source_Pool_cc)
-                            self.full_source_Pool_hh.append(source_Pool_hh)
+                        # else:
+                        #     self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
+                        #         'name'] + "[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "];\n"
+                        #     source_Pool_cc = self.fxp_inc + "void Max_Pool2D_" + str(
+                        #         self.index_P2D) + "(" + self.type + " input_MaxPooling[" + str(
+                        #         in_shape[0] * in_shape[1] * in_shape[
+                        #             2]) + "], " + self.type + " output_MaxPooling[" + str(
+                        #         out_shape[0] * out_shape[1] * out_shape[2]) + "]){\n\tint PoolSize = " + str(
+                        #         poolSize) + ";\n\tint stride = " + str(
+                        #         strides) + ";\n\tint index = 0;\n\tfor (int i = 0; i < " + str(
+                        #         out_shape[0]) + "; i++){\n\t\tindex = 0;\n\t\tfor (int z = 0; z < " + str(
+                        #         out_shape[1]) + "; z++){\n\t\t\tfor (int y = 0; y < " + str(out_shape[
+                        #                                                                         2]) + "; y++){\n\t\t\t\t" + self.type + " max_c = -10;\n\t\t\t\tfor (int h = 0; h < PoolSize; h++){\n\t\t\t\t\tfor (int w = 0; w < PoolSize; w++){\n\t\t\t\t\t\tint Pool_index = " + str(
+                        #         in_shape[1]) + " * " + str(in_shape[2]) + " * i + " + str(
+                        #         in_shape[1]) + " * h + " + str(in_shape[
+                        #                                            2]) + " * stride * z + w + y * stride;\n\t\t\t\t\t\t" + self.type + " Pool_value = input_MaxPooling[Pool_index];" + "\n\t\t\t\t\t\tif (Pool_value >= max_c) max_c = Pool_value;" + "\n\t\t\t\t\t}\n\t\t\t\t}" + "\n\t\t\t\tint outIndex = " + str(
+                        #         out_shape[1]) + " * " + str(out_shape[
+                        #                                         2]) + " * i + index;\n\t\t\t\toutput_MaxPooling[outIndex] = max_c;\n\t\t\t\tindex++;" + "\n\t\t\t}\n\t\t}\n\t}\n}\n"
+                        #     source_Pool_hh = self.fxp_inc + "void Max_Pool2D_" + str(
+                        #         self.index_P2D) + "(" + self.type + " input_MaxPooling[" + str(
+                        #         in_shape[0] * (in_shape[1] + 2)) + "], " + self.type + " output_MaxPooling[" + str(
+                        #         out_shape[0] * out_shape[1]) + "]);\n"
+                        #     self.full_source_CNN_cc.append(["\tMax_Pool2D_" + str(self.index_P2D) + "(",
+                        #                                     self.config["layers"][i]['config']['name'], "", ""])
+                        #     self.full_source_Pool_cc.append(source_Pool_cc)
+                        #     self.full_source_Pool_hh.append(source_Pool_hh)
 
                     self.index_P2D += 1
 
@@ -1092,7 +1131,7 @@ class Py2C:
                     if self.config["layers"][i]['config']['padding'] == 'same':
                         padding = ((out_shape[1] - 1) * strides - (in_shape[1] - poolSize)) / 2
                         in_shape_if_padding = (in_shape[0], (in_shape[1] + 2 * padding))
-                        # test = math.floor(padding)
+
                         if padding - math.floor(padding) != 0.5:
                             source_pad_pool_cc = self.fxp_inc + "void Padding_Pool_" + str(
                                 self.index_P) + "(" + self.type + " input_Pad_Pool[" + str(
@@ -1145,16 +1184,7 @@ class Py2C:
                                 ["\tPadding_Pool_" + str(self.index_P) + "(", "OutPadPool" + str(self.index_P), "",
                                  ""])
 
-                        source_Pool_cc = self.fxp_inc + "void Max_Pool1D_" + str(
-                            self.index_P) + "(" + self.type + " input_MaxPooling[" + str(int(
-                            in_shape_if_padding[0] * in_shape_if_padding[
-                                1])) + "], " + self.type + " output_MaxPooling[" + str(
-                            out_shape[0] * out_shape[1]) + "]){\n\tint PoolSize = " + str(
-                            poolSize) + ";\n\tint stride= " + str(
-                            strides) + ";\n\tint index = 0;\n\tloop_for_channel_pool_" + str(
-                            self.index_P) + ":\n\tfor (int z = 0; z < " + str(
-                            out_shape[0]) + "; z++){\n\t\tindex = 0;\n\t\tloop_for_weight_pool_" + str(
-                            self.index_P) + ":\n\t\tfor (int y = 0; y < " + str(out_shape[
+                        source_Pool_cc = self.fxp_inc + "void Max_Pool1D_" + str(self.index_P) + "(" + self.type + " input_MaxPooling[" + str(int(in_shape_if_padding[0] * in_shape_if_padding[1])) + "], " + self.type + " output_MaxPooling[" + str(out_shape[0] * out_shape[1]) + "]){\n\tint PoolSize = " + str(poolSize) + ";\n\tint stride= " + str(strides) + ";\n\tint index = 0;\n\tloop_for_channel_pool_" + str(self.index_P) + ":\n\tfor (int z = 0; z < " + str(out_shape[0]) + "; z++){\n\t\tindex = 0;\n\t\tloop_for_weight_pool_" + str(self.index_P) + ":\n\t\tfor (int y = 0; y < " + str(out_shape[
                                                                                     1]) + "; y++){\n\t\t\t" + self.type + " max = -10;\n\t\t\tfor (int j = 0; j < PoolSize; j++)\n\t\t\t{\n\t\t\t\tint pool_index = " + str(
                             int(in_shape_if_padding[
                                     1])) + " * z + j + y * stride;\n\t\t\t\t" + self.type + " pool_value = input_MaxPooling[pool_index];\n\t\t\t\tif (pool_value > max) max=pool_value;\n\t\t\t}\n\t\t\tint out_index = " + str(
@@ -1219,34 +1249,115 @@ class Py2C:
                         self.fxp_inc = ""
                     strides = self.model.layers[i].strides[0]
                     poolSize = self.model.layers[i].pool_size[0]
-                    source_Pool_cc = self.fxp_inc + "void Average_Pool1D_" + str(
-                        self.index_P) + "(" + self.type + " input_AveragePooling[" + str(
-                        in_shape[0] * in_shape[1]) + "], " + self.type + " output_AveragePooling[" + str(
-                        out_shape[0] * out_shape[1]) + "]){\n\tint PoolSize = " + str(
-                        poolSize) + ";\n\tint stride= " + str(
-                        strides) + ";\n\tint index = 0;\n\tloop_for_channel_pool_" + str(
-                        self.index_P) + ":\n\tfor (int z = 0; z < " + str(
-                        out_shape[0]) + "; z++){\n\t\tindex = 0;\n\t\tloop_for_weight_pool_" + str(
-                        self.index_P) + ":\n\t\tfor (int y = 0; y < " + str(out_shape[
-                                                                                1]) + "; y++){\n\t\t\t" + self.type + " Average = 0;\n\t\t\t" + self.type + " pool_value = 0;\n\t\t\tfor (int j = 0; j < PoolSize; j++)\n\t\t\t{\n\t\t\t\tint pool_index = " + str(
-                        in_shape[
-                            1]) + " * z + j + y * stride;\n\t\t\t\tpool_value += input_AveragePooling[pool_index];\n\t\t\t}\n\t\t\tAverage = pool_value / PoolSize;\n\t\t\tint out_index = " + str(
-                        out_shape[
-                            1]) + " * z + index;\n\t\t\toutput_AveragePooling[out_index]=Average;\n\t\t\tindex++;\n\t\t}\n\t}\n}\n"
-                    source_Pool_hh = self.fxp_inc + "void Average_Pool1D_" + str(
-                        self.index_P) + "(" + self.type + " input_AveragePooling[" + str(
-                        in_shape[0] * (in_shape[1])) + "], " + self.type + " output_AveragePooling[" + str(
-                        out_shape[0] * out_shape[1]) + "]);\n"
-                    self.full_source_Pool_cc.append(source_Pool_cc)
-                    self.full_source_Pool_hh.append(source_Pool_hh)
+                    if self.config["layers"][i]['config']['padding'] == 'same':
+                        padding = ((out_shape[1] - 1) * strides - (in_shape[1] - poolSize)) / 2
+                        in_shape_if_padding = (in_shape[0], (in_shape[1] + 2 * padding))
 
-                    self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
-                        'name'] + "[" + str(
-                        out_shape[0] *
-                        out_shape[1]) + "];\n"
-                    self.full_source_CNN_cc.append(
-                        ["\tAverage_Pool1D_" + str(self.index_P) + "(", self.config["layers"][i]['config']['name'], "",
-                         ""])
+                        if padding - math.floor(padding) != 0.5:
+                            source_pad_pool_cc = self.fxp_inc + "void Padding_Pool_" + str(
+                                self.index_P) + "(" + self.type + " input_Pad_Pool[" + str(
+                                in_shape[0] * in_shape[1]) + "], " + self.type + " output_Pad_Pool[" + str(int(
+                                in_shape_if_padding[0] * in_shape_if_padding[
+                                    1])) + "]){\n\tloop_for_3_channel_pad_" + str(
+                                self.index_P) + ":\n\tfor (int c = 0; c < " + str(
+                                int(in_shape_if_padding[0])) + "; c++){" + "\n\t\tloop_for_channel_pad_" + str(
+                                self.index_P) + ":\n\t\tfor (int n = 0; n < " + str(
+                                int(in_shape_if_padding[1])) + "; n++){\n\t\t\tif (n < " + str(
+                                int(0 + padding)) + " || n >= " + str(
+                                int(in_shape[1] + padding)) + ") output_Pad_Pool[" + str(
+                                int(in_shape_if_padding[1])) + " * c + n]=0; else output_Pad_Pool[" + str(
+                                int(in_shape_if_padding[1])) + " * c + n] = input_Pad_Pool[" + str(
+                                in_shape[1]) + " * c + n - " + str(int(padding)) + "];\n\t\t}\n\t}\n}\n"
+                            source_pad_pool_hh = self.fxp_inc + "void Padding_Pool_" + str(
+                                self.index_P) + "(" + self.type + " input_Pad_Pool[" + str(
+                                in_shape[0] * in_shape[1]) + "], " + self.type + " output_Pad_Pool[" + str(
+                                int(in_shape_if_padding[0] * in_shape_if_padding[1])) + "]);\n"
+                            self.full_source_Pool_cc.append(source_pad_pool_cc)
+                            self.full_source_Pool_hh.append(source_pad_pool_hh)
+                            self.call_function += "\t" + self.type + " OutPadPool" + str(self.index_P) + "[" + str(
+                                int(in_shape_if_padding[0] * in_shape_if_padding[1])) + "];\n"
+                            self.full_source_CNN_cc.append(
+                                ["\tPadding_Pool_" + str(self.index_P) + "(", "OutPadPool" + str(self.index_P), "",
+                                 ""])
+                        else:
+                            source_pad_pool_cc = self.fxp_inc + "void Padding_Pool_" + str(
+                                self.index_P) + "(" + self.type + " input_Pad_Pool[" + str(
+                                in_shape[0] * in_shape[1]) + "], " + self.type + " output_Pad_Pool[" + str(int(
+                                in_shape_if_padding[0] * in_shape_if_padding[
+                                    1])) + "]){\n\tloop_for_3_channel_pad_" + str(
+                                self.index_P) + ":\n\tfor (int c = 0; c < " + str(
+                                int(in_shape_if_padding[0])) + "; c++){" + "\n\t\tloop_for_channel_pad_" + str(
+                                self.index_P) + ":\n\t\tfor (int n = 0; n < " + str(
+                                int(in_shape_if_padding[1])) + "; n++){\n\t\t\tif (n >= " + str(
+                                int(in_shape[1] + 2 * padding)) + ") output_Pad_Pool[" + str(
+                                int(in_shape_if_padding[1])) + " * c + n]=0; else output_Pad_Pool[" + str(
+                                int(in_shape_if_padding[1])) + " * c + n] = input_Pad_Pool[" + str(
+                                in_shape[1]) + " * c + n];\n\t\t}\n\t}\n}\n"
+                            source_pad_pool_hh = self.fxp_inc + "void Padding_Pool_" + str(
+                                self.index_P) + "(" + self.type + " input_Pad_Pool[" + str(
+                                in_shape[0] * in_shape[1]) + "], " + self.type + " output_Pad_Pool[" + str(
+                                int(in_shape_if_padding[0] * in_shape_if_padding[1])) + "]);\n"
+                            self.full_source_Pool_cc.append(source_pad_pool_cc)
+                            self.full_source_Pool_hh.append(source_pad_pool_hh)
+                            self.call_function += "\t" + self.type + " OutPadPool" + str(self.index_P) + "[" + str(
+                                int(in_shape_if_padding[0] * in_shape_if_padding[1])) + "];\n"
+                            self.full_source_CNN_cc.append(
+                                ["\tPadding_Pool_" + str(self.index_P) + "(", "OutPadPool" + str(self.index_P), "",
+                                 ""])
+
+                        source_Pool_cc = self.fxp_inc + "void Average_Pool1D_" + str(
+                            self.index_P) + "(" + self.type + " input_AveragePooling[" + str(
+                            int(in_shape_if_padding[0] * in_shape_if_padding[1])) + "], " + self.type + " output_AveragePooling[" + str(
+                            out_shape[0] * out_shape[1]) + "]){\n\tint PoolSize = " + str(
+                            poolSize) + ";\n\tint stride= " + str(
+                            strides) + ";\n\tint index = 0;\n\tloop_for_channel_pool_" + str(
+                            self.index_P) + ":\n\tfor (int z = 0; z < " + str(
+                            out_shape[0]) + "; z++){\n\t\tindex = 0;\n\t\tloop_for_weight_pool_" + str(
+                            self.index_P) + ":\n\t\tfor (int y = 0; y < " + str(out_shape[1]) + "; y++){\n\t\t\t" + self.type + " Average = 0;\n\t\t\t" + self.type + " pool_value = 0;\n\t\t\tfor (int j = 0; j < PoolSize; j++)\n\t\t\t{\n\t\t\t\tint pool_index = " + str(int(in_shape_if_padding[1])) + " * z + j + y * stride;\n\t\t\t\tpool_value += input_AveragePooling[pool_index];\n\t\t\t}\n\t\t\tAverage = pool_value / PoolSize;\n\t\t\tint out_index = " + str(
+                            out_shape[
+                                1]) + " * z + index;\n\t\t\toutput_AveragePooling[out_index]=Average;\n\t\t\tindex++;\n\t\t}\n\t}\n}\n"
+                        source_Pool_hh = self.fxp_inc + "void Average_Pool1D_" + str(
+                            self.index_P) + "(" + self.type + " input_AveragePooling[" + str(
+                            int(in_shape_if_padding[0] * (in_shape_if_padding[1]))) + "], " + self.type + " output_AveragePooling[" + str(
+                            out_shape[0] * out_shape[1]) + "]);\n"
+                        self.full_source_Pool_cc.append(source_Pool_cc)
+                        self.full_source_Pool_hh.append(source_Pool_hh)
+                        self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
+                            'name'] + "[" + str(
+                            out_shape[0] *
+                            out_shape[1]) + "];\n"
+                        self.full_source_CNN_cc.append(
+                            ["\tAverage_Pool1D_" + str(self.index_P) + "(", self.config["layers"][i]['config']['name'], "",
+                             ""])
+
+                    else:
+                        source_Pool_cc = self.fxp_inc + "void Average_Pool1D_" + str(
+                            self.index_P) + "(" + self.type + " input_AveragePooling[" + str(
+                            in_shape[0] * in_shape[1]) + "], " + self.type + " output_AveragePooling[" + str(
+                            out_shape[0] * out_shape[1]) + "]){\n\tint PoolSize = " + str(
+                            poolSize) + ";\n\tint stride= " + str(
+                            strides) + ";\n\tint index = 0;\n\tloop_for_channel_pool_" + str(
+                            self.index_P) + ":\n\tfor (int z = 0; z < " + str(
+                            out_shape[0]) + "; z++){\n\t\tindex = 0;\n\t\tloop_for_weight_pool_" + str(
+                            self.index_P) + ":\n\t\tfor (int y = 0; y < " + str(out_shape[
+                                                                                    1]) + "; y++){\n\t\t\t" + self.type + " Average = 0;\n\t\t\t" + self.type + " pool_value = 0;\n\t\t\tfor (int j = 0; j < PoolSize; j++)\n\t\t\t{\n\t\t\t\tint pool_index = " + str(
+                            in_shape[
+                                1]) + " * z + j + y * stride;\n\t\t\t\tpool_value += input_AveragePooling[pool_index];\n\t\t\t}\n\t\t\tAverage = pool_value / PoolSize;\n\t\t\tint out_index = " + str(
+                            out_shape[
+                                1]) + " * z + index;\n\t\t\toutput_AveragePooling[out_index]=Average;\n\t\t\tindex++;\n\t\t}\n\t}\n}\n"
+                        source_Pool_hh = self.fxp_inc + "void Average_Pool1D_" + str(
+                            self.index_P) + "(" + self.type + " input_AveragePooling[" + str(
+                            in_shape[0] * (in_shape[1])) + "], " + self.type + " output_AveragePooling[" + str(
+                            out_shape[0] * out_shape[1]) + "]);\n"
+                        self.full_source_Pool_cc.append(source_Pool_cc)
+                        self.full_source_Pool_hh.append(source_Pool_hh)
+                        self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
+                            'name'] + "[" + str(
+                            out_shape[0] *
+                            out_shape[1]) + "];\n"
+                        self.full_source_CNN_cc.append(
+                            ["\tAverage_Pool1D_" + str(self.index_P) + "(", self.config["layers"][i]['config']['name'], "",
+                             ""])
 
                     self.index_P += 1
 
@@ -1257,7 +1368,7 @@ class Py2C:
                     self.model.layers[i].input.shape[depth_index], self.model.layers[i].input.shape[height_index],
                     self.model.layers[i].input.shape[width_index])
                     out_shape = (self.model.layers[i].output.shape[1])
-                    # source_Flatten_cc = "void"
+
                     source_Flatten_hh = "void GlobalMaxPool2D(" + self.type + " input_GlobalMaxPool2D[" + str(
                         in_shape[0] * in_shape[1] * in_shape[2]) + "]," + self.type + " output_GlobalMaxPool2D[" + str(
                         out_shape) + "]);\n"
@@ -1443,8 +1554,7 @@ class Py2C:
                         out_shape) + "];\n"
 
                 if activation == "sigmoid":
-                    result_acc = "\tfor (int i = 0; i < " + str(
-                        out_shape) + "; i++){\n\t\toutput_Dense[i]=1/(1 + exp(-out_Dense[i]));\n\t}\n"
+                    result_acc = "\tfor (int i = 0; i < " + str(out_shape) + "; i++){\n\t\toutput_Dense[i]=1/(1 + exp(-out_Dense[i]));\n\t}\n"
                     include = "#include <cmath>\n"
                 elif activation == "relu":
                     result_acc = "\tfor (int i = 0; i < " + str(out_shape) + "; i++){\n\t\tif (out_Dense[i] < 0) output_Dense[i] = 0; else output_Dense[i] = out_Dense[i];\n\t}\n"
@@ -1482,8 +1592,11 @@ class Py2C:
 
             assert layer.find("conv2d_input") < 0, "Py2C is now only supporting Keras Functional API"
 
+            assert layer.find("conv1d_input") < 0, "Py2C is now only supporting Keras Functional API"
+
             assert found == 1, "Py2C has not supporting " + str(self.config["layers"][i]['config']['name']) + " yet"
 
+        ######################################### SET UP INPUT PHARSE ##################################################
         def find_input(Layer_name, index):
             if "Pad" in Layer_name:
                 subname = self.full_source_CNN_cc[index + 1][1]
@@ -1542,10 +1655,10 @@ class Py2C:
                                                   self.full_source_CNN_cc[i][2] + "," + self.full_source_CNN_cc[i][
                                                       3] + "," + self.full_source_CNN_cc[i][4] + ");\n"
                         if (len(self.full_source_CNN_cc[i]) == 4):
-                            self.call_function += self.full_source_CNN_cc[i][0] + find_input(
-                                self.full_source_CNN_cc[i][1], i) + "," + self.full_source_CNN_cc[i][1] + "," + \
-                                                  self.full_source_CNN_cc[i][2] + "," + self.full_source_CNN_cc[i][
-                                                      3] + ");\n"
+                            self.call_function += self.full_source_CNN_cc[i][0] + find_input(self.full_source_CNN_cc[i][1], i) + "," + self.full_source_CNN_cc[i][1] + "," + self.full_source_CNN_cc[i][2] + "," + self.full_source_CNN_cc[i][3] + ");\n"
+
+                        if (len(self.full_source_CNN_cc[i]) == 3):
+                            self.call_function += self.full_source_CNN_cc[i][0] + find_input(self.full_source_CNN_cc[i][1], i) + "," + self.full_source_CNN_cc[i][1] + "," + self.full_source_CNN_cc[i][2] + ");\n"
 
                 else:
                     if "add" in self.full_source_CNN_cc[i][1]:
@@ -1589,6 +1702,7 @@ class Py2C:
                 self.model.layers[1].input.shape[1]) + "]," + self.type + self.out[
                                      0] + "," + self.type + " Weights[" + str(self.cnt_param) + "]);\n"
 
+        ######################################### WRITING TESTBENCH PHARSE #############################################
         if self.choose_only_output == False:
             add_because_of_onlyoutput = [" * " + self.out[1],
                                          "for (int j = 0; j < " + self.out[1] + "; j++){\n\t\t\t*(OutArray + " +
