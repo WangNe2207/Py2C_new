@@ -157,6 +157,10 @@ class Py2C:
                     self.fxp_inc = self.fxp_include
                 else:
                     self.fxp_inc = ""
+                if activation == "sigmoid" or activation == "tanh":
+                    self.fxp_inc += "#include <cmath>\n"
+                else:
+                    self.fxp_inc += ""
                 stride = self.model.layers[i].strides[0]
                 if self.config["layers"][i]['config']['padding'] == 'same':
                     padding = (((out_shape[1] - 1) * stride - in_shape[1] + kernel_shape[2]) / 2,
@@ -718,10 +722,28 @@ class Py2C:
                     out_shape = self.model.layers[i].output.shape[1]
                     self.call_function += "\t" + str(self.type) + " " + self.config["layers"][i]['config'][
                         'name'] + "[" + str(in_shape) + "];\n"
+                    activation = self.config["layers"][i]['config']['activation']
+                    source = ""
+                    if activation == "sigmoid":
+                        source = "Output_Activation[i] = 1/(1 + exp(-Input_Activation[i]));"
+                    elif activation == "relu":
+                        source = "if(Input_Activation[i] > 0){\n\t\t\tOutput_Activation[i] = Input_Activation[i];\n\t\t}else\n\t\t{\n\t\t\tOutput_Activation[i] = 0;\n\t\t}"
+                    elif activation == "tanh":
+                        source = "Output_Activation[i]=(2/(1 + exp(-2*Input_Activation[i])))-1"
+                    else:
+                        source = "Output_Activation[i]=Input_Activation[i]"
+                    if self.type == "fxp" and self.index == 0:
+                        self.fxp_inc = self.fxp_include
+                    else:
+                        self.fxp_inc = ""
+                    if activation == "sigmoid" or activation == "tanh":
+                        self.fxp_inc += "#include <cmath>\n"
+                    else:
+                        self.fxp_inc += ""
                     source_Conv_cc = self.fxp_inc + " void Activation" + str(self.indexActi) + "(" + str(
                         self.type) + " Input_Activation[" + str(in_shape) + "], " + str(
                         self.type) + " Output_Activation[" + str(out_shape) + "]){\n\tfor (int i = 0; i < " + str(
-                        out_shape) + "; i++){\n\t\tif(Input_Activation[i] > 0){\n\t\t\tOutput_Activation[i] = Input_Activation[i];\n\t\t}else\n\t\t{\n\t\t\tOutput_Activation[i] = 0;\n\t\t}\n\t}\n}\n"
+                        out_shape) + "; i++){\n\t\t" + source + "\n\t}\n}\n"
                     source_Conv_hh = self.fxp_inc + "void Activation" + str(self.indexActi) + "(" + str(
                         self.type) + " Input_Activation[" + str(in_shape) + "], " + str(
                         self.type) + " Output_Activation[" + str(out_shape) + "]);\n"
@@ -741,12 +763,30 @@ class Py2C:
                     self.model.layers[i].output.shape[width_index])
                     self.call_function += "\t" + str(self.type) + " " + self.config["layers"][i]['config'][
                         'name'] + "[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "];\n"
+                    activation = self.config["layers"][i]['config']['activation']
+                    source = ""
+                    if activation == "sigmoid":
+                        source = "Output_Activation[i] = 1/(1 + exp(-Input_Activation[i]));"
+                    elif activation == "relu":
+                        source = "if(Input_Activation[i] > 0){\n\t\t\tOutput_Activation[i] = Input_Activation[i];\n\t\t}else\n\t\t{\n\t\t\tOutput_Activation[i] = 0;\n\t\t}"
+                    elif activation == "tanh":
+                        source = "Output_Activation[i]=(2/(1 + exp(-2*Input_Activation[i])))-1"
+                    else:
+                        source = "Output_Activation[i]=Input_Activation[i]"
+                    if self.type == "fxp" and self.index == 0:
+                        self.fxp_inc = self.fxp_include
+                    else:
+                        self.fxp_inc = ""
+                    if activation == "sigmoid" or activation == "tanh":
+                        self.fxp_inc += "#include <cmath>\n"
+                    else:
+                        self.fxp_inc += ""
                     source_Conv_cc = self.fxp_inc + " void Activation" + str(self.indexActi) + "(" + str(
                         self.type) + " Input_Activation[" + str(in_shape[0] * in_shape[1] * in_shape[2]) + "], " + str(
                         self.type) + " Output_Activation[" + str(
                         out_shape[0] * out_shape[1] * out_shape[2]) + "]){\n\tfor (int i = 0; i < " + str(
                         out_shape[0] * out_shape[1] * out_shape[
-                            2]) + "; i++){\n\t\tif(Input_Activation[i] > 0){\n\t\t\tOutput_Activation[i] = Input_Activation[i];\n\t\t}else\n\t\t{\n\t\t\tOutput_Activation[i] = 0;\n\t\t}\n\t}\n}\n"
+                            2]) + "; i++){\n\t\t" + source + "\n\t}\n}\n"
                     source_Conv_hh = self.fxp_inc + "void Activation" + str(self.indexActi) + "(" + str(
                         self.type) + " Input_Activation[" + str(in_shape[0] * in_shape[1] * in_shape[2]) + "], " + str(
                         self.type) + " Output_Activation[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "]);\n"
@@ -760,13 +800,35 @@ class Py2C:
                 if len(self.model.layers[i].input.shape) == 3:
                     in_shape = (self.model.layers[i].input.shape[height_index], self.model.layers[i].input.shape[width_index])
                     out_shape = (self.model.layers[i].output.shape[height_index], self.model.layers[i].output.shape[width_index])
+                    activation = self.config["layers"][i]['config']['activation']
+                    source = ""
+                    if activation == "sigmoid":
+                        source = "Output_Activation[i] = 1/(1 + exp(-Input_Activation[i]));"
+                    elif activation == "relu":
+                        source = "if(Input_Activation[i] > 0){\n\t\t\tOutput_Activation[i] = Input_Activation[i];\n\t\t}else\n\t\t{\n\t\t\tOutput_Activation[i] = 0;\n\t\t}"
+                    elif activation == "tanh":
+                        source = "Output_Activation[i]=(2/(1 + exp(-2*Input_Activation[i])))-1;"
+                    else:
+                        source = "Output_Activation[i]=Input_Activation[i]"
+                    # if activation == "sigmoid":
+                    #     self.act_arr = "Output_Conv[" + str(out_shape[1]) + "*n+y]=1/(1 + exp(-s));"
+                    # elif activation == "tanh":
+                    #     self.act_arr = "Output_Conv[" + str(out_shape[1]) + "*n+y]=(2/(1 + exp(-2*s)))-1;"
                     self.call_function += "\t" + str(self.type) + " " + self.config["layers"][i]['config'][
                         'name'] + "[" + str(out_shape[0] * out_shape[1]) + "];\n"
+                    if self.type == "fxp" and self.index == 0:
+                        self.fxp_inc = self.fxp_include
+                    else:
+                        self.fxp_inc = ""
+                    if activation == "sigmoid" or activation == "tanh":
+                        self.fxp_inc += "#include <cmath>\n"
+                    else:
+                        self.fxp_inc += ""
                     source_Conv_cc = self.fxp_inc + " void Activation" + str(self.indexActi) + "(" + str(
                         self.type) + " Input_Activation[" + str(in_shape[0] * in_shape[1]) + "], " + str(
                         self.type) + " Output_Activation[" + str(
                         out_shape[0] * out_shape[1]) + "]){\n\tfor (int i = 0; i < " + str(out_shape[0] * out_shape[
-                        1]) + "; i++){\n\t\tif(Input_Activation[i] > 0){\n\t\t\tOutput_Activation[i] = Input_Activation[i];\n\t\t}else\n\t\t{\n\t\t\tOutput_Activation[i] = 0;\n\t\t}\n\t}\n}\n"
+                        1]) + "; i++){\n\t\t" + source + "\n\t}\n}\n"
                     source_Conv_hh = self.fxp_inc + "void Activation" + str(self.indexActi) + "(" + str(
                         self.type) + " Input_Activation[" + str(in_shape[0] * in_shape[1]) + "], " + str(
                         self.type) + " Output_Activation[" + str(out_shape[0] * out_shape[1]) + "]);\n"
