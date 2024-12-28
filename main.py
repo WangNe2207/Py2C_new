@@ -1,8 +1,8 @@
 from Py2C import Py2C
-# path_w= ["Conv.cc", "Conv.hh", "Pool.cc", "Pool.hh", "Dense.cc", "CNN.hh"]
-# print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-# print(tf.__version__)
-pyc_lib = Py2C("1DCNN_yesBias_sigmoid.h5")
+import tensorflow as tf
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+print(tf.__version__)
+pyc_lib = Py2C("Inceptionv1.h5")
 pyc_lib.convert2C()
 pyc_lib.WriteCfile()
 # pyc_lib.del_one_file("CNN.hh")
