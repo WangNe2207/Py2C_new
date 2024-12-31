@@ -1,40 +1,52 @@
-Version Requirements
+# ITMN
 
-Tensorflow = 2.10
-Keras = 2.10
+This is the official implementation of paper "Inception Time Mamba Network with Distribution
+Balanced Loss for Multi-Label ECG Classification"
 
-HƯỚNG DẪN SỬ DỤNG PY2C:
+## Prerequisites
 
-bước 1: ở main.py tại dòng: pyc_lib = Py2C(".....h5"), hãy điền vào phần .... file h5 của bạn 
+- Install dependencies: ```pip install -r requirements.txt```
+- Install Mamba SSM: ```pip install mamba-ssm``` (If there are any errors, please following this [repo](https://github.com/state-spaces/mamba) to download the Mamba SSM module)
+- Prepare the **wfdb** library
+- GPU is needed to run support Mamba SSM module.
 
-bước 2: chính cái param ở file py2c.py theo model muốn chạy(hướng dẫn bên dưới)
+## Dataset
 
-bước 3: chạy main.py
+- Download PTB-XL dataset ([link](https://www.physionet.org/content/ptb-xl/1.0.1/))
+- Download CPSC2018 dataset ([link](http://2018.icbeb.org/Challenge.html))
 
-Bước 4: code sẽ xuất ra các đoạn code cpp và header file. Sau đó cho đoạn code được xuất ra vào project c++ để chạy(thay đổi hằng numberofpicture = số lượng input, hằng d = dimension của input.
+## Training
 
-LƯU Ý: 
+1. Prepare Dataset
+   - We provide the train/validation/test set in .csv format in folder **data** corresponding to all classification task within PTB-XL and CPSC2018 datasets.
+   - Modify field **base_data_path** in file **config.yaml** by the corresponding path to the downloaded PTB-XL and CPSC2018 datasets.
+2. Modify field **use_loss** (selected from **["DB", "FOCAL", "CB", "WBCE", "STANDARD"]**) in file **config.yaml** to train model with different loss functions:
+   - STANDARD: Binary-Cross Entropy (BCE) Loss
+   - WBCE: Weighted BCE Loss
+   - FOCAL: Focal Loss
+   - CB: Class-Balanced Focal Loss
+   - DB: Distribution-Balanced Loss
+3. Run file **main.py** with specific arguments to train model:
+   - exp_type: experiment type (selected from **["super", "sub", "rhythm", "all", "diag", "form", "cpsc"]**) corresponding to different classification tasks within PTB-XL and CPSC2018 datasets.
+   - Example: to train model for "SUPER" task in PTB-XL dataset, run the command
+   ```commandline
+   python main.py --exp_type super
+   ```
+4. Structure:
+   - Folder **logs** with other sub-folders are created.
+   - Checkpoints are saved in folder **logs/{exp_type}/checkpoints**
 
-Chỉ hỗ trợ model được xây dựng bởi Keras Functional API
+## Inference
 
+1. Modify value in file **config.yaml**:
+   - test_ckpt_path: path to checkpoint used to test
+2. We release [checkpoints](https://drive.google.com/drive/folders/1YfN9upk4ZPwADSsbL5BjUvl3GYzrVBux?usp=sharing) corresponding to each classification task in the PTB-XL dataset reported in the paper.
+3. Run file **test.py** with specific arguments to inference:
+   - exp_type: experiment type (selected from **["super", "sub", "rhythm", "all", "diag", "form", "cpsc"]**)
+   - Note: the value of exp_type must correspond to the checkpoint.
+   - Example: to test model for "SUPER" task in PTB-XL dataset, run the command
+   ```commandline
+   python test.py --exp_type super
+   ```
 
-    """
-    The Py2C class has four inputs and nine functions.
-
-        With input:
-        - model_path (string) is path of h5 model file (Note: This function support CNN and ANN)
-        - type (string) is type of data such as int, float, fxp (default: "fxp")
-        - fxp_para is parameter of fxp if you choose. It has 2 parameters (x,y) with x is sum of bits showing a data and y is integral part of the data
-        - if choose_only_output is False, output C code model show full array. Else it will show the only variable being argmax of array
-        - ide is kind of IDE that you use to run C code. if you use Visual Studio, set ide = "vs". if you use Visual Studio Code or something else you can ignore it
-        With function:
-        - set_Fxp_Param function is to set fxp parameter again
-        - convert2C function is to convert the loaded model into C code and it store in self array
-        - WriteCfile function is to write C code from convert2C into .cc and .hh file
-        - del_one_file function is to delete the particular file
-        - del_any_file function is to delete any file in the particular array
-        - del_all_file function is to delete all of .cc and .hh file, which has created
-        - Write_Float_Weights_File function is to create Float Weights file
-        - Write_IEEE754_32bits_Weights_File function is to create IEEE754 32bits Weights file
-        - Write_FixedPoint_Weights_File function is to create Fixed Point Weights file
-    """
+## Citation
