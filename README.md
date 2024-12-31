@@ -6,14 +6,15 @@ This is the official implementation of paper "High-Level Synthesis from Python t
 
 1. Prepare txt Dataset
    - Image input:
-      + 3D(Cifar10, Cifar100, ImageNet): print all value of a image in channel order
-      + 1D(Fashion-MNIST): print all value of a image
-   - Signal input
-3. Using Py2C:
+      + 3D(Cifar10, Cifar100, ImageNet): print all values of a image in channel order
+      + 1D(Fashion-MNIST): print all values of a image
+   - Signal input:
+      + 
+2. Using Py2C:
    Step 1: in main.py at line: pyc_lib = Py2C("....."), fill in the .... part the path to your H5 file
    Step 2: edit the parameters in py2c.py file according to your model
    Step 3: run main.py
-4. Edit C++ Code:
+3. Edit C++ Code:
    Step 1: In CNN_tb.cpp: replaces constant numberofpicture = number of inputs, constant d = dimension of input
    Step 2: In CNN_tb.cpp: in line "FILE* Input = fopen("X.txt", "r");" and "FILE* Output = fopen("Y.txt", "r");" .replaces "X.txt" and "Y.txt" with the name of your txt files
    Step 3: run C code
