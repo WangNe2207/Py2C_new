@@ -1,40 +1,20 @@
-# ITMN
+# PY2C
 
-This is the official implementation of paper "Inception Time Mamba Network with Distribution
-Balanced Loss for Multi-Label ECG Classification"
+This is the official implementation of paper "High-Level Synthesis from Python to RTL for Deep Neural Networks on SoC System"
 
-## Prerequisites
-
-- Install dependencies: ```pip install -r requirements.txt```
-- Install Mamba SSM: ```pip install mamba-ssm``` (If there are any errors, please following this [repo](https://github.com/state-spaces/mamba) to download the Mamba SSM module)
-- Prepare the **wfdb** library
-- GPU is needed to run support Mamba SSM module.
-
-## Dataset
-
-- Download PTB-XL dataset ([link](https://www.physionet.org/content/ptb-xl/1.0.1/))
-- Download CPSC2018 dataset ([link](http://2018.icbeb.org/Challenge.html))
-
-## Training
+## User manual
 
 1. Prepare Dataset
    - We provide the train/validation/test set in .csv format in folder **data** corresponding to all classification task within PTB-XL and CPSC2018 datasets.
    - Modify field **base_data_path** in file **config.yaml** by the corresponding path to the downloaded PTB-XL and CPSC2018 datasets.
-2. Modify field **use_loss** (selected from **["DB", "FOCAL", "CB", "WBCE", "STANDARD"]**) in file **config.yaml** to train model with different loss functions:
-   - STANDARD: Binary-Cross Entropy (BCE) Loss
-   - WBCE: Weighted BCE Loss
-   - FOCAL: Focal Loss
-   - CB: Class-Balanced Focal Loss
-   - DB: Distribution-Balanced Loss
-3. Run file **main.py** with specific arguments to train model:
-   - exp_type: experiment type (selected from **["super", "sub", "rhythm", "all", "diag", "form", "cpsc"]**) corresponding to different classification tasks within PTB-XL and CPSC2018 datasets.
-   - Example: to train model for "SUPER" task in PTB-XL dataset, run the command
-   ```commandline
-   python main.py --exp_type super
-   ```
-4. Structure:
-   - Folder **logs** with other sub-folders are created.
-   - Checkpoints are saved in folder **logs/{exp_type}/checkpoints**
+2. Using Py2C:
+   Step 1: in main.py at line: pyc_lib = Py2C("....."), fill in the .... part the path to your H5 file
+   Step 2: edit the parameters in py2c.py file according to your model
+   Step 3: run main.py
+4. Edit C++ Code:
+   Step 1: In CNN_tb.cpp: replaces constant numberofpicture = number of inputs, constant d = dimension of input
+   Step 2: In CNN_tb.cpp: in line "FILE* Input = fopen("X.txt", "r");" and "FILE* Output = fopen("Y.txt", "r");" .replaces "X.txt" and "Y.txt" with the name of your txt files
+   Step 3: run C code
 
 ## Inference
 
