@@ -4,10 +4,12 @@ This is the official implementation of paper "High-Level Synthesis from Python t
 
 ## User manual
 
-1. Prepare Dataset
-   - We provide the train/validation/test set in .csv format in folder **data** corresponding to all classification task within PTB-XL and CPSC2018 datasets.
-   - Modify field **base_data_path** in file **config.yaml** by the corresponding path to the downloaded PTB-XL and CPSC2018 datasets.
-2. Using Py2C:
+1. Prepare txt Dataset
+   - Image input:
+      + 3D(Cifar10, Cifar100, ImageNet): print all value of a image in channel order
+      + 1D(Fashion-MNIST): print all value of a image
+   - Signal input
+3. Using Py2C:
    Step 1: in main.py at line: pyc_lib = Py2C("....."), fill in the .... part the path to your H5 file
    Step 2: edit the parameters in py2c.py file according to your model
    Step 3: run main.py
