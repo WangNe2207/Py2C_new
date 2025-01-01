@@ -6,11 +6,13 @@ This is the official implementation of paper "High-Level Synthesis from Python t
 
 1. Prepare txt Dataset
    - Image input:
-      + 3D(Cifar10, Cifar100, ImageNet): print all values of a image in channel order.
-   Example: 
+      + 3D(Cifar10, Cifar100, ImageNet): print all values of a image in channel order.  
+   Example:  
    ![ImageOfReadme_0](https://github.com/user-attachments/assets/fd4355ce-67bf-4266-9e89-2e0b4f58f3a4)
-      + 1D(Fashion-MNIST): print all values of a image
-   - Signal input:
+      + 1D(Fashion-MNIST): print all values of a image.  
+   Example:  
+   ![ImageOfReadme_1](https://github.com/user-attachments/assets/25206884-03e9-480d-a861-73717b686f58)
+   - Signal input(PTB-XL, HAR):
       + 
 2. Using Py2C:  
    Step 1: in main.py at line: pyc_lib = Py2C("....."), fill in the .... part the path to your H5 file  
