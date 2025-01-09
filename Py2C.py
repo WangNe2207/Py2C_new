@@ -16,7 +16,7 @@ class Py2C:
         - fxp_para is parameter of fxp if you choose. It has 2 parameters (x,y) with x is sum of bits showing a data and y is integral part of the data
         - if choose_only_output is False, output C code model show full array. Else it will show the only variable being argmax of array
         - ide is kind of IDE that you use. if you use Visual Studio, set ide = "vs". if you use Visual Studio Code or something else you can ignore it
-        - num_of_output is number of output your model have. if you use Visual Studio, set ide = "vs". if you use Visual Studio Code or something else you can ignore it
+        - num_of_output is number of output your model have.
         With function:
         - set_Fxp_Param function is to set fxp parameter again
         - convert2C function is to convert the loaded model into C code and it store in self array
@@ -86,7 +86,6 @@ class Py2C:
         self.path_w = ["Conv.cpp", "Conv.h", "Pool.cpp", "Pool.h", "Dense.cpp", "Dense.h", "CNN.cpp", "CNN.h",
                        "CNN_tb.cpp"]
         print("Model Information")
-        # self.model.summary()
 
     def set_Fxp_Param(self, fxp_para):
         assert fxp_para[0] > 0 and fxp_para[1] > 0, "the 1st or the 2nd Fxp Parameter must be more than zero!!!"
@@ -117,9 +116,7 @@ class Py2C:
 
         for i in range(len(self.config["layers"])):
             found = 0
-            # layer = self.config["layers"][i]['config']['name']
             layer = self.config["layers"][i]['class_name']
-            # convert conv2d layer into c array that act like an conv2d layer
 
             if layer.find("Conv2D") >= 0 and layer.find("conv2d_input") < 0:
                 found = 1
@@ -748,7 +745,6 @@ class Py2C:
                     else:
                         activation = self.config["layers"][i]['config']['activation']
 
-
                     if self.type == "fxp" and self.index == 0:
                         self.fxp_inc = self.fxp_include
                     else:
@@ -914,13 +910,6 @@ class Py2C:
                     else:
                         self.fxp_inc = ""
 
-                    def find_smallest_pad(i, k, s):
-                        p = 0
-                        while True:
-                            if (i - k + 2 * p) % s == 0:
-                                return p
-                            p += 0.5
-
                     if self.config["layers"][i]['config']['padding'] == 'valid':
                         self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config']['name'] + "[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "];\n"
                         source_Pool_cc = self.fxp_inc + "void average_Pool2D_" + str(
@@ -1039,36 +1028,6 @@ class Py2C:
                             self.full_source_Pool_hh.append(source_Pool_hh)
                             self.full_source_Pool_cc.append(source_pad_pool_cc)
                             self.full_source_Pool_hh.append(source_pad_pool_hh)
-                        # else:
-                        #     self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
-                        #         'name'] + "[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "];\n"
-                        #     source_Pool_cc = self.fxp_inc + "void average_Pool2D_" + str(
-                        #         self.index_P2D) + "(" + self.type + " input_AveragePooling[" + str(
-                        #         in_shape[0] * in_shape[1] * in_shape[
-                        #             2]) + "], " + self.type + " output_AveragePooling[" + str(
-                        #         out_shape[0] * out_shape[1] * out_shape[2]) + "]){\n\tint PoolSize = " + str(
-                        #         poolSize) + ";\n\tint stride = " + str(
-                        #         strides) + ";\n\tint index = 0;\n\tfor (int i = 0; i < " + str(
-                        #         out_shape[0]) + "; i++){\n\t\tindex = 0;\n\t\tfor (int z = 0; z < " + str(
-                        #         out_shape[1]) + "; z++){\n\t\t\tfor (int y = 0; y < " + str(
-                        #         out_shape[2]) + "; y++){\n\t\t\t\t" + str(
-                        #         self.type) + " Average = 0;\n\t\t\t\t" + str(
-                        #         self.type) + " Pool_value = 0;\n\t\t\t\tfor (int h = 0; h < PoolSize; h++){\n\t\t\t\t\tfor (int w = 0; w < PoolSize; w++){\n\t\t\t\t\t\tint Pool_index = " + str(
-                        #         in_shape[1]) + " * " + str(in_shape[2]) + " * i + " + str(
-                        #         in_shape[1]) + " * h + " + str(in_shape[
-                        #                                            2]) + " * stride * z + w + y * stride;\n\t\t\t\t\t\tPool_value += input_AveragePooling[Pool_index];" + "\n\t\t\t\t\t\tAverage = Pool_value / " + str(
-                        #         poolSize * poolSize) + ";\n\t\t\t\t\t}\n\t\t\t\t}" + "\n\t\t\t\tint outIndex = " + str(
-                        #         out_shape[1]) + " * " + str(out_shape[
-                        #                                         2]) + " * i + index;\n\t\t\t\toutput_AveragePooling[outIndex] = Average;\n\t\t\t\tindex++;" + "\n\t\t\t}\n\t\t}\n\t}\n}\n"
-                        #     source_Pool_hh = self.fxp_inc + "void average_Pool2D_" + str(
-                        #         self.index_P2D) + "(" + self.type + " input_AveragePooling[" + str(in_shape[0] * (
-                        #             in_shape[1] + 2)) + "], " + self.type + " output_AveragePooling[" + str(
-                        #         out_shape[0] * out_shape[1]) + "]);\n"
-                        #     self.full_source_CNN_cc.append(["\taverage_Pool2D_" + str(self.index_P2D) + "(",
-                        #                                     self.config["layers"][i]['config']['name'], "", ""])
-                        #     self.full_source_Pool_cc.append(source_Pool_cc)
-                        #     self.full_source_Pool_hh.append(source_Pool_hh)
-
                     self.index_P2D += 1
 
             if layer.find("MaxPooling2D") >= 0:
@@ -1088,12 +1047,6 @@ class Py2C:
                         self.fxp_inc = ""
 
 
-                    def find_smallest_pad(i, k, s):
-                        p = 0
-                        while True:
-                            if (i - k + 2 * p) % s == 0:
-                                return p
-                            p += 0.5
 
                     if self.config["layers"][i]['config']['padding'] == 'valid':
                         self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
@@ -1198,36 +1151,9 @@ class Py2C:
                             self.full_source_Pool_hh.append(source_Pool_hh)
                             self.full_source_Pool_cc.append(source_pad_pool_cc)
                             self.full_source_Pool_hh.append(source_pad_pool_hh)
-                        # else:
-                        #     self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
-                        #         'name'] + "[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "];\n"
-                        #     source_Pool_cc = self.fxp_inc + "void Max_Pool2D_" + str(
-                        #         self.index_P2D) + "(" + self.type + " input_MaxPooling[" + str(
-                        #         in_shape[0] * in_shape[1] * in_shape[
-                        #             2]) + "], " + self.type + " output_MaxPooling[" + str(
-                        #         out_shape[0] * out_shape[1] * out_shape[2]) + "]){\n\tint PoolSize = " + str(
-                        #         poolSize) + ";\n\tint stride = " + str(
-                        #         strides) + ";\n\tint index = 0;\n\tfor (int i = 0; i < " + str(
-                        #         out_shape[0]) + "; i++){\n\t\tindex = 0;\n\t\tfor (int z = 0; z < " + str(
-                        #         out_shape[1]) + "; z++){\n\t\t\tfor (int y = 0; y < " + str(out_shape[
-                        #                                                                         2]) + "; y++){\n\t\t\t\t" + self.type + " max_c = -10;\n\t\t\t\tfor (int h = 0; h < PoolSize; h++){\n\t\t\t\t\tfor (int w = 0; w < PoolSize; w++){\n\t\t\t\t\t\tint Pool_index = " + str(
-                        #         in_shape[1]) + " * " + str(in_shape[2]) + " * i + " + str(
-                        #         in_shape[1]) + " * h + " + str(in_shape[
-                        #                                            2]) + " * stride * z + w + y * stride;\n\t\t\t\t\t\t" + self.type + " Pool_value = input_MaxPooling[Pool_index];" + "\n\t\t\t\t\t\tif (Pool_value >= max_c) max_c = Pool_value;" + "\n\t\t\t\t\t}\n\t\t\t\t}" + "\n\t\t\t\tint outIndex = " + str(
-                        #         out_shape[1]) + " * " + str(out_shape[
-                        #                                         2]) + " * i + index;\n\t\t\t\toutput_MaxPooling[outIndex] = max_c;\n\t\t\t\tindex++;" + "\n\t\t\t}\n\t\t}\n\t}\n}\n"
-                        #     source_Pool_hh = self.fxp_inc + "void Max_Pool2D_" + str(
-                        #         self.index_P2D) + "(" + self.type + " input_MaxPooling[" + str(
-                        #         in_shape[0] * (in_shape[1] + 2)) + "], " + self.type + " output_MaxPooling[" + str(
-                        #         out_shape[0] * out_shape[1]) + "]);\n"
-                        #     self.full_source_CNN_cc.append(["\tMax_Pool2D_" + str(self.index_P2D) + "(",
-                        #                                     self.config["layers"][i]['config']['name'], "", ""])
-                        #     self.full_source_Pool_cc.append(source_Pool_cc)
-                        #     self.full_source_Pool_hh.append(source_Pool_hh)
 
                     self.index_P2D += 1
 
-            # convert max_pooling1d layer into c array that act like an max_pooling1d layer
             if layer.find("MaxPooling1D") >= 0:
                 if layer.find("GlobalMaxPooling1D") < 0:
                     found = 1
@@ -1509,7 +1435,6 @@ class Py2C:
                     self.model.layers[i].input.shape[depth_index], self.model.layers[i].input.shape[height_index],
                     self.model.layers[i].input.shape[width_index])
                     out_shape = (self.model.layers[i].output.shape[1])
-                    # source_Flatten_cc = "void"
                     source_Flatten_hh = "void GlobalAveragePool2D_" + str(self.index_GlbAvgPool) + "(" + self.type + " input_GlobalAveragePool2D[" + str(
                         in_shape[0] * in_shape[1] * in_shape[
                             2]) + "]," + self.type + " output_GlobalAveragePool2D[" + str(out_shape) + "]);\n"
@@ -1577,7 +1502,6 @@ class Py2C:
                         ["\tGlobalAveragePool1D_" + str(self.index_GlbAvgPool) + "(", self.config["layers"][i]['config']['name'], "", ""])
                     self.index_GlbAvgPool+=1
 
-            # convert flatten layer into c array that act like an flatten layer
             if layer.find("Flatten") >= 0:
                 # flatten for 1d
                 found = 1
@@ -1621,7 +1545,6 @@ class Py2C:
 
                 self.index_Flatten+=1
 
-            # convert dense layer into c array that act like an dense layer
             if layer.find("Dense") >= 0:
                 found = 1
                 weight_shape = self.model.layers[i].get_weights()[0].shape
@@ -1646,7 +1569,6 @@ class Py2C:
                             if self.index_output != self.num_of_output - 1:
                                 self.out[0] += "," + self.type
                             self.out[1] = "1"
-                            # end = "\toutput_Dense = maxindex;\n"
                         else:
                             self.out[0] = " OutModel" + str(self.index_output) + "[" + str(out_shape) + "]"
                             self.out[1] = str(out_shape)
@@ -1799,7 +1721,6 @@ class Py2C:
             if i == 0:
                 continue
             else:
-                test_len = len(self.full_source_CNN_cc[i])
                 if (len(self.full_source_CNN_cc[i]) > 2):
                     if self.full_source_CNN_cc[i][2] == "":
                         self.call_function += self.full_source_CNN_cc[i][0] + find_input(self.full_source_CNN_cc[i][1],
@@ -1818,7 +1739,6 @@ class Py2C:
                                                   self.full_source_CNN_cc[i][2] + "," + self.full_source_CNN_cc[i][
                                                       3] + "," + self.full_source_CNN_cc[i][4] + ");\n"
                         if (len(self.full_source_CNN_cc[i]) == 4):
-                            # test = find_input(self.full_source_CNN_cc[i][1], i)
                             self.call_function += self.full_source_CNN_cc[i][0] + find_input(self.full_source_CNN_cc[i][1], i) + "," + self.full_source_CNN_cc[i][1] + "," + self.full_source_CNN_cc[i][2] + "," + self.full_source_CNN_cc[i][3] + ");\n"
 
                         if (len(self.full_source_CNN_cc[i]) == 3):
