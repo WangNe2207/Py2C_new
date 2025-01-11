@@ -1,7 +1,40 @@
-Version Requirements
 
-Tensorflow = 2.10
-Keras = 2.10
+
+
+
+
+# Py2C
+
+This is the official Py2C tool of paper "High-Level Synthesis from Python to RTL for Deep
+Neural Networks on SoC System"
+
+## Version Requirements  
+- Tensorflow = 2.10  
+- Keras = 2.10  
+## User manual  
+
+## Dataset Preparing  
+
+### Image
+1. 3D(Cifar10, ImageNet):
+Print the values ​​of the image from left to right, top to bottom and red channel to blue channel
+
+3. 1D(Fashion MNIST)
+
+## Inference
+
+1. Modify value in file **config.yaml**:
+   - test_ckpt_path: path to checkpoint used to test
+2. We release [checkpoints](https://drive.google.com/drive/folders/1YfN9upk4ZPwADSsbL5BjUvl3GYzrVBux?usp=sharing) corresponding to each classification task in the PTB-XL dataset reported in the paper.
+3. Run file **test.py** with specific arguments to inference:
+   - exp_type: experiment type (selected from **["super", "sub", "rhythm", "all", "diag", "form", "cpsc"]**)
+   - Note: the value of exp_type must correspond to the checkpoint.
+   - Example: to test model for "SUPER" task in PTB-XL dataset, run the command
+   ```commandline
+   python test.py --exp_type super
+   ```
+
+## Citation
 
 HƯỚNG DẪN SỬ DỤNG PY2C:
 
@@ -17,24 +50,3 @@ LƯU Ý:
 
 Chỉ hỗ trợ model được xây dựng bởi Keras Functional API
 
-
-    """
-    The Py2C class has four inputs and nine functions.
-
-        With input:
-        - model_path (string) is path of h5 model file (Note: This function support CNN and ANN)
-        - type (string) is type of data such as int, float, fxp (default: "fxp")
-        - fxp_para is parameter of fxp if you choose. It has 2 parameters (x,y) with x is sum of bits showing a data and y is integral part of the data
-        - if choose_only_output is False, output C code model show full array. Else it will show the only variable being argmax of array
-        - ide is kind of IDE that you use to run C code. if you use Visual Studio, set ide = "vs". if you use Visual Studio Code or something else you can ignore it
-        With function:
-        - set_Fxp_Param function is to set fxp parameter again
-        - convert2C function is to convert the loaded model into C code and it store in self array
-        - WriteCfile function is to write C code from convert2C into .cc and .hh file
-        - del_one_file function is to delete the particular file
-        - del_any_file function is to delete any file in the particular array
-        - del_all_file function is to delete all of .cc and .hh file, which has created
-        - Write_Float_Weights_File function is to create Float Weights file
-        - Write_IEEE754_32bits_Weights_File function is to create IEEE754 32bits Weights file
-        - Write_FixedPoint_Weights_File function is to create Fixed Point Weights file
-    """
