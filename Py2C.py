@@ -29,7 +29,7 @@ class Py2C:
         - Write_FixedPoint_Weights_File function is to create Fixed Point Weights file
     """
 
-    def __init__(self, model_path, type="float", fxp_para=(21, 8),num_of_output = 3, choose_only_output=True, ide="vs"):
+    def __init__(self, model_path, type="float", fxp_para=(21, 8),num_of_output=1, choose_only_output=True, ide="vs"):
         self.model = tf.keras.models.load_model(model_path, compile=False)
         assert fxp_para[0] > 0 and fxp_para[1] > 0, "the 1st or the 2nd Fxp Parameter must be more than zero!!!"
         assert fxp_para[0] >= fxp_para[1], "the 1st Fxp Parameter must be equal or more than the 2nd one!!!"
@@ -1076,7 +1076,8 @@ class Py2C:
                         self.full_source_Pool_hh.append(source_Pool_hh)
                     else:
                         if self.config["layers"][i]['config']['padding'] == 'same':
-                            pad = math.floor((out_shape[1]*strides-(in_shape[1]-poolSize))/2)
+                            # pad = math.floor((out_shape[1]*strides-(in_shape[1]-poolSize))/2)
+                            pad = 0.5
                             self.call_function += "\t" + self.type + " " + "OutPadPool" + str(
                                 self.index_P2D) + "[" + str(
                                 int(in_shape[0] * (in_shape[1] + 2 * pad) * (in_shape[1] + 2 * pad))) + "];\n"

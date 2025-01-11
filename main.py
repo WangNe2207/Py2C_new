@@ -2,7 +2,7 @@ from Py2C import Py2C
 import tensorflow as tf
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 print(tf.__version__)
-pyc_lib = Py2C("Inceptionv1.h5")
+pyc_lib = Py2C("ResNet34.h5")
 pyc_lib.convert2C()
 pyc_lib.WriteCfile()
 # pyc_lib.del_one_file("CNN.hh")
