@@ -17,7 +17,7 @@ Neural Networks on SoC System"
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Red&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Green&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Blue  
 txt: ![My Project](https://img.shields.io/badge/0.1_0.2_0.3_0.4_0.5_0.6_0.7_0.8_0.9-red)![My Project](https://img.shields.io/badge/1_1.1_1.2_1.3_1.4_1.5_1.6_1.7_1.8-green)![My Project](https://img.shields.io/badge/1.9_2_2.1_2.2_2.3_2.4_2.5_2.6_2.7-blue)
 
-3. 1D(Fashion MNIST):  
+2. 1D(Fashion MNIST):  
 - Print the values ​​of the image *from left to right, top to bottom*  
 ![Screenshot 2025-01-10 114657](https://github.com/user-attachments/assets/3fe3c109-20a8-469c-944b-24bb555a5cce)  
 txt: ![My Project](https://img.shields.io/badge/0.1_0.2_0.3_0.4_0.5_0.6_0.7_0.8_0.9-white)
