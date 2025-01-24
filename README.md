@@ -41,7 +41,7 @@ txt: ![My Project](https://img.shields.io/badge/0.1_1.3_..._2.5_3.7-747474)![My 
   - *fxp_para* is parameter of fxp if you choose. It has 2 parameters (x,y) with x is sum of bits showing a data and y is integral part of the data
   - if *choose_only_output* is False, output C code model show full array. Else it will show the only variable being argmax of array
   - *ide* is kind of IDE that you use. if you use Visual Studio, set ide = "vs". if you use Visual Studio Code or something else you can ignore it
-  - *num_of_output* is number of output your model have.  
+  - *num_of_output* is number of output your model have. For example: to use inceptionV1 in Py2C tool, you need to set up *num_of_output* equal to 3  
 - Step 3: Run main.py
 ### C++ code set up
 
