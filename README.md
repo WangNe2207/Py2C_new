@@ -39,9 +39,11 @@ txt: ![My Project](https://img.shields.io/badge/0.1_1.3_..._2.5_3.7-747474)![My 
   - *model_path* (string) is path of h5 model file (Note: This function support CNN and ANN)
   - *type* (string) is type of data such as int, float, fxp (default: "fxp")
   - *fxp_para* is parameter of fxp if you choose. It has 2 parameters (x,y) with x is sum of bits showing a data and y is integral part of the data
-  - if *choose_only_output* is False, output C code model show full array. Else it will show the only variable being argmax of array
-  - *ide* is kind of IDE that you use. if you use Visual Studio, set ide = "vs". if you use Visual Studio Code or something else you can ignore it
-  - *num_of_output* is number of output your model have. For example: to use inceptionV1 in Py2C tool, you need to set up *num_of_output* equal to 3  
+  - *choose_only_output* is used to choose what type of your model's output. If your model's output is a number, then set it *True*. If your model's output is an array, then set it *False*. 
+  - *ide* is used to choose what kind of IDE that you use. if you use Visual Studio, set ide = "vs". if you use Visual Studio Code or something else you can ignore it
+  - *num_of_output* is the number of output your model have. For example: to use inceptionV1 in Py2C tool, you need to set up *num_of_output* equal to 3  
+    ![Image](https://github.com/user-attachments/assets/f273f789-266a-4d34-b086-3166949de4a5)  
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;InceptionV1 architecture  
 - Step 3: Run main.py
 ### C++ code set up
 
