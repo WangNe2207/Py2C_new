@@ -86,6 +86,7 @@ class Py2C:
         self.path_w = ["Conv.cpp", "Conv.h", "Pool.cpp", "Pool.h", "Dense.cpp", "Dense.h", "CNN.cpp", "CNN.h",
                        "CNN_tb.cpp"]
         print("Model Information")
+        # self.model.summary()
 
     def set_Fxp_Param(self, fxp_para):
         assert fxp_para[0] > 0 and fxp_para[1] > 0, "the 1st or the 2nd Fxp Parameter must be more than zero!!!"
@@ -117,7 +118,6 @@ class Py2C:
         for i in range(len(self.config["layers"])):
             found = 0
             layer = self.config["layers"][i]['class_name']
-
             if layer.find("Conv2D") >= 0 and layer.find("conv2d_input") < 0:
                 found = 1
                 activation = self.config["layers"][i]['config']['activation']
@@ -171,9 +171,6 @@ class Py2C:
                 if self.config["layers"][i]['config']['padding'] == 'same':
                     padding = (((out_shape[1] - 1) * stride - in_shape[1] + kernel_shape[2]) / 2,
                                ((out_shape[2] - 1) * stride - in_shape[2] + kernel_shape[3]) / 2)
-                    # if padding[0] > 1 and isinstance(padding[0], int) == 0:
-                    #     padding = (math.floor(((out_shape[1] - 1) * stride - in_shape[1] + kernel_shape[2]) / 2),
-                    #                math.floor(((out_shape[2] - 1) * stride - in_shape[2] + kernel_shape[3]) / 2))
 
                     in_shape_if_padding = (in_shape[0], (in_shape[1] + 2 * padding[0]), (in_shape[2] + 2 * padding[1]))
                     source_pad_conv_cc = self.fxp_inc + "void Padding_Conv2D_" + str(
@@ -745,6 +742,7 @@ class Py2C:
                     else:
                         activation = self.config["layers"][i]['config']['activation']
 
+
                     if self.type == "fxp" and self.index == 0:
                         self.fxp_inc = self.fxp_include
                     else:
@@ -910,6 +908,7 @@ class Py2C:
                     else:
                         self.fxp_inc = ""
 
+
                     if self.config["layers"][i]['config']['padding'] == 'valid':
                         self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config']['name'] + "[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "];\n"
                         source_Pool_cc = self.fxp_inc + "void average_Pool2D_" + str(
@@ -936,7 +935,9 @@ class Py2C:
                         self.full_source_Pool_hh.append(source_Pool_hh)
                     else:
                         if self.config["layers"][i]['config']['padding'] == 'same':
-                            pad = 0.5
+                            pad = math.floor((out_shape[1]*strides-(in_shape[1]-poolSize))/2)
+
+                            # pad = 0.5
                             self.call_function += "\t" + self.type + " " + "OutPadPool" + str(
                                 self.index_P2D) + "[" + str(
                                 int(in_shape[0] * (in_shape[1] + 2 * pad) * (in_shape[1] + 2 * pad))) + "];\n"
@@ -1076,8 +1077,8 @@ class Py2C:
                         self.full_source_Pool_hh.append(source_Pool_hh)
                     else:
                         if self.config["layers"][i]['config']['padding'] == 'same':
-                            # pad = math.floor((out_shape[1]*strides-(in_shape[1]-poolSize))/2)
-                            pad = 0.5
+                            pad = math.floor((out_shape[1]*strides-(in_shape[1]-poolSize))/2)
+                            # pad = 0.5
                             self.call_function += "\t" + self.type + " " + "OutPadPool" + str(
                                 self.index_P2D) + "[" + str(
                                 int(in_shape[0] * (in_shape[1] + 2 * pad) * (in_shape[1] + 2 * pad))) + "];\n"
@@ -1152,9 +1153,36 @@ class Py2C:
                             self.full_source_Pool_hh.append(source_Pool_hh)
                             self.full_source_Pool_cc.append(source_pad_pool_cc)
                             self.full_source_Pool_hh.append(source_pad_pool_hh)
+                        # else:
+                        #     self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
+                        #         'name'] + "[" + str(out_shape[0] * out_shape[1] * out_shape[2]) + "];\n"
+                        #     source_Pool_cc = self.fxp_inc + "void Max_Pool2D_" + str(
+                        #         self.index_P2D) + "(" + self.type + " input_MaxPooling[" + str(
+                        #         in_shape[0] * in_shape[1] * in_shape[
+                        #             2]) + "], " + self.type + " output_MaxPooling[" + str(
+                        #         out_shape[0] * out_shape[1] * out_shape[2]) + "]){\n\tint PoolSize = " + str(
+                        #         poolSize) + ";\n\tint stride = " + str(
+                        #         strides) + ";\n\tint index = 0;\n\tfor (int i = 0; i < " + str(
+                        #         out_shape[0]) + "; i++){\n\t\tindex = 0;\n\t\tfor (int z = 0; z < " + str(
+                        #         out_shape[1]) + "; z++){\n\t\t\tfor (int y = 0; y < " + str(out_shape[
+                        #                                                                         2]) + "; y++){\n\t\t\t\t" + self.type + " max_c = -10;\n\t\t\t\tfor (int h = 0; h < PoolSize; h++){\n\t\t\t\t\tfor (int w = 0; w < PoolSize; w++){\n\t\t\t\t\t\tint Pool_index = " + str(
+                        #         in_shape[1]) + " * " + str(in_shape[2]) + " * i + " + str(
+                        #         in_shape[1]) + " * h + " + str(in_shape[
+                        #                                            2]) + " * stride * z + w + y * stride;\n\t\t\t\t\t\t" + self.type + " Pool_value = input_MaxPooling[Pool_index];" + "\n\t\t\t\t\t\tif (Pool_value >= max_c) max_c = Pool_value;" + "\n\t\t\t\t\t}\n\t\t\t\t}" + "\n\t\t\t\tint outIndex = " + str(
+                        #         out_shape[1]) + " * " + str(out_shape[
+                        #                                         2]) + " * i + index;\n\t\t\t\toutput_MaxPooling[outIndex] = max_c;\n\t\t\t\tindex++;" + "\n\t\t\t}\n\t\t}\n\t}\n}\n"
+                        #     source_Pool_hh = self.fxp_inc + "void Max_Pool2D_" + str(
+                        #         self.index_P2D) + "(" + self.type + " input_MaxPooling[" + str(
+                        #         in_shape[0] * (in_shape[1] + 2)) + "], " + self.type + " output_MaxPooling[" + str(
+                        #         out_shape[0] * out_shape[1]) + "]);\n"
+                        #     self.full_source_CNN_cc.append(["\tMax_Pool2D_" + str(self.index_P2D) + "(",
+                        #                                     self.config["layers"][i]['config']['name'], "", ""])
+                        #     self.full_source_Pool_cc.append(source_Pool_cc)
+                        #     self.full_source_Pool_hh.append(source_Pool_hh)
 
                     self.index_P2D += 1
 
+            # convert max_pooling1d layer into c array that act like an max_pooling1d layer
             if layer.find("MaxPooling1D") >= 0:
                 if layer.find("GlobalMaxPooling1D") < 0:
                     found = 1
@@ -1436,6 +1464,7 @@ class Py2C:
                     self.model.layers[i].input.shape[depth_index], self.model.layers[i].input.shape[height_index],
                     self.model.layers[i].input.shape[width_index])
                     out_shape = (self.model.layers[i].output.shape[1])
+                    # source_Flatten_cc = "void"
                     source_Flatten_hh = "void GlobalAveragePool2D_" + str(self.index_GlbAvgPool) + "(" + self.type + " input_GlobalAveragePool2D[" + str(
                         in_shape[0] * in_shape[1] * in_shape[
                             2]) + "]," + self.type + " output_GlobalAveragePool2D[" + str(out_shape) + "]);\n"
@@ -1503,6 +1532,7 @@ class Py2C:
                         ["\tGlobalAveragePool1D_" + str(self.index_GlbAvgPool) + "(", self.config["layers"][i]['config']['name'], "", ""])
                     self.index_GlbAvgPool+=1
 
+            # convert flatten layer into c array that act like an flatten layer
             if layer.find("Flatten") >= 0:
                 # flatten for 1d
                 found = 1
@@ -1546,6 +1576,7 @@ class Py2C:
 
                 self.index_Flatten+=1
 
+            # convert dense layer into c array that act like an dense layer
             if layer.find("Dense") >= 0:
                 found = 1
                 weight_shape = self.model.layers[i].get_weights()[0].shape
@@ -1563,16 +1594,60 @@ class Py2C:
                 else:
                     self.fxp_inc = ""
 
-                if (self.num_of_output >= 1):
+                # if (self.num_of_output > 1):
+                #     if activation == "softmax":
+                #         if self.choose_only_output:
+                #             self.out[0] += " &OutModel" + str(self.index_output)
+                #             if self.index_output != self.num_of_output - 1:
+                #                 self.out[0] += "," + self.type
+                #             self.out[1] = "1"
+                #             # end = "\toutput_Dense = maxindex;\n"
+                #         else:
+                #             assert self.choose_only_output == False, "Py2C haven't supported the case when num_of_output > 1 and choose_only_output is False yet!!!"
+                #             # self.out[0] = " OutModel" + str(self.index_output) + "[" + str(out_shape) + "]"
+                #             # self.out[1] = str(out_shape)
+                #
+                #
+                #         self.full_source_CNN_cc.append(
+                #             ["\tDense_" + str(self.index_D) + "(", "OutModel" + str(self.index_output),
+                #              "&Weights[" + str(self.cnt_param + in_shape * out_shape) + "]",
+                #              "&Weights[" + str(self.cnt_param) + "]"])
+                #         self.index_output += 1
+                #     else:
+                #
+                #         self.full_source_CNN_cc.append(
+                #             ["\tDense_" + str(self.index_D) + "(", self.config["layers"][i]['config']['name'],
+                #              "&Weights[" + str(self.cnt_param + in_shape * out_shape) + "]",
+                #              "&Weights[" + str(self.cnt_param) + "]"])
+                #         out_dense = self.type + " output_Dense[" + str(out_shape) + "]"
+                #         self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
+                #             'name'] + "[" + str(
+                #             out_shape) + "];\n"
+                # else:
+                #     if self.choose_only_output:
+                #         self.out[0] += " &OutModel" + str(self.index_output)
+                #         # if self.index_output != self.num_of_output - 1:
+                #         #     self.out[0] += "," + self.type
+                #         self.out[1] = "1"
+                #     else:
+                #         self.out[0] = " OutModel" + "[" + str(out_shape) + "]"
+                #         self.out[1] = str(out_shape)
+                #     if i == len(self.config["layers"]) - 1:
+                #         self.full_source_CNN_cc.append(["\tDense_" + str(self.index_D) + "(", "OutModel",
+                #                                         "&Weights[" + str(self.cnt_param + in_shape * out_shape) + "]",
+                #                                         "&Weights[" + str(self.cnt_param) + "]"])
+                #     else:
+                #         self.full_source_CNN_cc.append(
+                #             ["\tDense_" + str(self.index_D) + "(", self.config["layers"][i]['config']['name'],
+                #              "&Weights[" + str(self.cnt_param + in_shape * out_shape) + "]",
+                #              "&Weights[" + str(self.cnt_param) + "]"])
+                #         out_dense = self.type + " output_Dense[" + str(out_shape) + "]"
+                #         self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
+                #             'name'] + "[" + str(
+                #             out_shape) + "];\n"
+
+                if (self.num_of_output > 1):
                     if activation == "softmax":
-                        if self.choose_only_output:
-                            self.out[0] += " &OutModel" + str(self.index_output)
-                            if self.index_output != self.num_of_output - 1:
-                                self.out[0] += "," + self.type
-                            self.out[1] = "1"
-                        else:
-                            self.out[0] = " OutModel" + str(self.index_output) + "[" + str(out_shape) + "]"
-                            self.out[1] = str(out_shape)
 
                         self.full_source_CNN_cc.append(
                             ["\tDense_" + str(self.index_D) + "(", "OutModel" + str(self.index_output),
@@ -1580,6 +1655,7 @@ class Py2C:
                              "&Weights[" + str(self.cnt_param) + "]"])
                         self.index_output += 1
                     else:
+
                         self.full_source_CNN_cc.append(
                             ["\tDense_" + str(self.index_D) + "(", self.config["layers"][i]['config']['name'],
                              "&Weights[" + str(self.cnt_param + in_shape * out_shape) + "]",
@@ -1590,24 +1666,20 @@ class Py2C:
                             out_shape) + "];\n"
                 else:
                     if i == len(self.config["layers"]) - 1:
-                        self.full_source_CNN_cc.append(["\tDense_" + str(self.index_D) + "(", "OutModel",
+                        self.full_source_CNN_cc.append(["\tDense_" + str(self.index_D) + "(", "OutModel" + str(self.index_output),
                                                         "&Weights[" + str(self.cnt_param + in_shape * out_shape) + "]",
                                                         "&Weights[" + str(self.cnt_param) + "]"])
-
                     else:
                         self.full_source_CNN_cc.append(
                             ["\tDense_" + str(self.index_D) + "(", self.config["layers"][i]['config']['name'],
                              "&Weights[" + str(self.cnt_param + in_shape * out_shape) + "]",
                              "&Weights[" + str(self.cnt_param) + "]"])
-                        out_dense = self.type + " output_Dense[" + str(out_shape) + "]"
                         self.call_function += "\t" + self.type + " " + self.config["layers"][i]['config'][
                             'name'] + "[" + str(
                             out_shape) + "];\n"
 
 
-
                 if activation == "sigmoid":
-
                     out_dense = self.type + " output_Dense[" + str(out_shape) + "]"
                     if self.type == "fxp":
                         include = "#include <hls_math.h>\n"
@@ -1674,19 +1746,25 @@ class Py2C:
             else:
                 subname = Layer_name
             if 'OutModel' in Layer_name:
-                for i in range(len(self.config["layers"])):
-                    if 'Dense' in self.config["layers"][i]['class_name']:
-                        if self.config["layers"][i]['config']['activation'] == 'softmax' and self.count_dense_output == 0:
+                if self.choose_only_output == True:
+                    for i in range(len(self.config["layers"])):
+                        if 'Dense' in self.config["layers"][i]['class_name']:
+                            if self.config["layers"][i]['config']['activation'] == 'softmax' and self.count_dense_output == 0:
+                                input_name = self.config["layers"][i]['inbound_nodes'][0][0][0]
+                                self.count_dense_output += 1
+                                return input_name
+                            if self.config["layers"][i]['config']['activation'] == 'softmax' and self.count_dense_output == 1:
+                                input_name = self.config["layers"][i+1]['inbound_nodes'][0][0][0]
+                                self.count_dense_output += 1
+                                return input_name
+                            if self.config["layers"][i]['config']['activation'] == 'softmax' and self.count_dense_output == 2:
+                                input_name = self.config["layers"][i+2]['inbound_nodes'][0][0][0]
+                                self.count_dense_output += 1
+                                return input_name
+                else:
+                    for i in range(len(self.config["layers"])):
+                        if 'Dense' in self.config["layers"][i]['class_name']:
                             input_name = self.config["layers"][i]['inbound_nodes'][0][0][0]
-                            self.count_dense_output += 1
-                            return input_name
-                        if self.config["layers"][i]['config']['activation'] == 'softmax' and self.count_dense_output == 1:
-                            input_name = self.config["layers"][i+1]['inbound_nodes'][0][0][0]
-                            self.count_dense_output += 1
-                            return input_name
-                        if self.config["layers"][i]['config']['activation'] == 'softmax' and self.count_dense_output == 2:
-                            input_name = self.config["layers"][i+2]['inbound_nodes'][0][0][0]
-                            self.count_dense_output += 1
                             return input_name
 
             for i in range(len(self.config["layers"])):
@@ -1740,6 +1818,7 @@ class Py2C:
                                                   self.full_source_CNN_cc[i][2] + "," + self.full_source_CNN_cc[i][
                                                       3] + "," + self.full_source_CNN_cc[i][4] + ");\n"
                         if (len(self.full_source_CNN_cc[i]) == 4):
+                            # test = find_input(self.full_source_CNN_cc[i][1], i)
                             self.call_function += self.full_source_CNN_cc[i][0] + find_input(self.full_source_CNN_cc[i][1], i) + "," + self.full_source_CNN_cc[i][1] + "," + self.full_source_CNN_cc[i][2] + "," + self.full_source_CNN_cc[i][3] + ");\n"
 
                         if (len(self.full_source_CNN_cc[i]) == 3):
@@ -1755,6 +1834,27 @@ class Py2C:
                         self.call_function += self.full_source_CNN_cc[i][0] + find_input(self.full_source_CNN_cc[i][1],
                                                                                          i) + "," + \
                                               self.full_source_CNN_cc[i][1] + ");\n"
+
+
+
+        if (self.num_of_output > 1):
+            if activation == "softmax":
+                if self.choose_only_output:
+                    for self.index_output in range(0,self.num_of_output):
+                        self.out[0] += " &OutModel" + str(self.index_output)
+                        if self.index_output != self.num_of_output - 1:
+                            self.out[0] += "," + self.type
+
+                    self.out[1] = "1"
+                else:
+                    assert self.choose_only_output == False, "Py2C haven't supported the case when num_of_output > 1 and choose_only_output is False yet!!!"
+        else:
+            if self.choose_only_output:
+                self.out[0] += " &OutModel" + str(self.index_output)
+                self.out[1] = "1"
+            else:
+                self.out[0] = " OutModel" + str(self.index_output) + "[" + str(out_shape) + "]"
+                self.out[1] = str(out_shape)
 
         if len(self.model.layers[1].input.shape) == 4:
             self.source_CNN += "void CNN(" + self.type + " InModel[" + str(self.model.layers[1].input.shape[depth_index] * self.model.layers[1].input.shape[height_index] *
@@ -1788,26 +1888,33 @@ class Py2C:
         if self.choose_only_output == False:
             add_because_of_onlyoutput = [" * " + self.out[1],
                                          "for (int j = 0; j < " + self.out[1] + "; j++){\n\t\t\t*(OutArray + " +
-                                         self.out[1] + " * i + j) = OutModel[j];\n\t\t}"]
+                                         self.out[1] + " * i + j) = OutModel0[j];\n\t\t}"]
         else:
-            add_because_of_onlyoutput = ["", "*(OutArray + i) = OutModel;"]
+            add_because_of_onlyoutput = ["", "*(OutArray + i) = OutModel0;"]
 
         if self.ide == "vs":
             ignore_warning = "#define _CRT_SECURE_NO_WARNINGS\n"
         else:
             ignore_warning = ""
-        if self.num_of_output == 1:
-            self.call[0] = "CNN(Image, OutModel, Weights);"
-            self.call[1] = "OutModel;"
-        elif self.num_of_output == 2:
-            self.call[0] = "CNN(Image, OutModel, OutModel1, Weights);"
-            self.call[1] = "OutModel, OutModel1;"
-        elif self.num_of_output == 3:
-            self.call[0] = "CNN(Image, OutModel, OutModel1, OutModel2, Weights);"
-            self.call[1] = "OutModel, OutModel1, OutModel2;"
+
+
+        if self.choose_only_output == False:
+            self.call[0] = "CNN(Image, OutModel0, Weights);"
+            self.call[1] = self.out[0] + ";"
         else:
-            self.call[0] = "CNN(Image, OutModel, Weights);"
-            self.call[1] = "OutModel;"
+            if self.num_of_output == 1:
+                self.call[0] = "CNN(Image, OutModel0, Weights);"
+                self.call[1] = "OutModel0;"
+            elif self.num_of_output == 2:
+                self.call[0] = "CNN(Image, OutModel0, OutModel1, Weights);"
+                self.call[1] = "OutModel0, OutModel1;"
+            elif self.num_of_output == 3:
+                self.call[0] = "CNN(Image, OutModel0, OutModel1, OutModel2, Weights);"
+                self.call[1] = "OutModel0, OutModel1, OutModel2;"
+            else:
+                self.call[0] = "CNN(Image, OutModel0, Weights);"
+                self.call[1] = "OutModel0;"
+
         if (len(self.model.layers[1].input.shape) == 4):
             self.source_CNN_tb = ignore_warning + "#include <conio.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <math.h>\n#include <string>\n#include <fstream>\n#include <iostream>\n#include \"CNN.h\"\n#include \"Conv.h\"\n#include \"Pool.h\"\n#include \"Dense.h\"\n#define NumberOfPicture " + "...\n#define d " + "...\n" + self.fxp_inc + "int main(){\n\t" + self.type + " " + self.call[1] + "\n\t" + self.type + "* Weights = (" + self.type + "*)malloc(" + str(
                 self.cnt_param) + " * sizeof(" + self.type + "));\n\tfloat tmp;\n\tFILE* Weight = fopen(\"Float_Weights.txt\", \"r\");\n\tfor (int i = 0; i < " + str(
@@ -1827,7 +1934,7 @@ class Py2C:
                 self.model.layers[1].input.shape[height_index]) + " * " + str(
                 self.model.layers[1].input.shape[width_index]) + ";\n\t\tfor (int k = 0; k < d * " + str(
                 self.model.layers[1].input.shape[height_index]) + " * " + str(self.model.layers[1].input.shape[
-                                                                                  width_index]) + "; k++)\n\t\t{\n\t\t\tImage[k] = *(InModel + startIndex + k);\n\t\t}\n\t\t" + self.call[0] + "\n\t\t*(OutArray + i) = OutModel;\n\t}\n\tfloat countTrue = 0;\n\tfor (int i = 0; i < NumberOfPicture" + \
+                                                                                  width_index]) + "; k++)\n\t\t{\n\t\t\tImage[k] = *(InModel + startIndex + k);\n\t\t}\n\t\t" + self.call[0] + "\n\t\t*(OutArray + i) = OutModel0;\n\t}\n\tfloat countTrue = 0;\n\tfor (int i = 0; i < NumberOfPicture" + \
                                  add_because_of_onlyoutput[
                                      0] + "; i++)\n\t{\n\t\tint labelValue = *(Label + i);\n\t\tint PredictValue = *(OutArray + i);\n\t\tif (labelValue == PredictValue)\n\t\t{\n\t\t\tcountTrue = countTrue + 1;\n\t\t}\n\t}\n\tfloat accuracy = (float)((countTrue / (NumberOfPicture" + \
                                  add_because_of_onlyoutput[
