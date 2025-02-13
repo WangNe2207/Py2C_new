@@ -4,8 +4,8 @@ This is the official Py2C tool of paper "High-Level Synthesis from Python to RTL
 Neural Networks on SoC System"
 
 ## Version Requirements  
-- Tensorflow = 2.10  
-- Keras = 2.10  
+- Tensorflow = 2.10 (**equal to 2.10**)
+- Keras = 2.10  (**equal to 2.10**)
 ## User manual  
 
 ## Dataset Preparing  
@@ -58,7 +58,7 @@ txt: ![My Project](https://img.shields.io/badge/0.1_1.3_..._2.5_3.7-747474)![My 
 - Step 4: Run C++ code.
 
 ## Note:
-- Our tool only support DNN model built by Keras Functional API and h5 checkpoint.   
+- Our tool only support DNN model built by Keras Functional API and h5 checkpoint.
 
 ## Our Experiment
 - We've already done some experiments using HAR[3] and Cifar10[1] dataset combine with VGG16[4], Resnet34[5], InceptionV1[6] model. You can access it through the link below:  
