@@ -59,6 +59,7 @@ txt: ![My Project](https://img.shields.io/badge/0.1_1.3_..._2.5_3.7-747474)![My 
 
 ## Note:
 - Our tool only support DNN model built by Keras Functional API and h5 checkpoint.
+- Important: Your h5 checkpoint must be built on the same keras's and tenssorflow's version. otherwise it will easilly cause errors. then, your h5 checkpoint's version must be 2.10  
 
 ## Our Experiment
 - We've already done some experiments using HAR[3] and Cifar10[1] dataset combine with VGG16[4], Resnet34[5], InceptionV1[6] model. You can access it through the link below:  
