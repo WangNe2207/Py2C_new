@@ -1,6 +1,6 @@
 # Py2C
 
-This is the official Py2C tool of paper "High-Level Synthesis from Python to RTL for Deep
+This is the official Py2C tool of the paper "High-Level Synthesis from Python to RTL for Deep
 Neural Networks on SoC System"
 
 ## Version Requirements  
@@ -9,10 +9,10 @@ Neural Networks on SoC System"
 ## User manual  
 
 ## Dataset Preparing  
-
+Because Py2C's output will contain a C++ testbench, we need to convert the dataset we use into Txt format to run the C++ testbench. Depending on which dataset you use, there will be different ways to convert it.
 ### Image
 1. 3D(Cifar10, ImageNet):
-- Print the values ​​of the image *from left to right, top to bottom and red channel to blue channel*  
+- Print the values ​​of the image *from left to right, top to bottom, and red channel to blue channel*  
 ![Screenshot 2025-01-10 110027](https://github.com/user-attachments/assets/f6dcc3d7-5b43-4746-acd1-5930a76bf4d6)  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Red&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Green&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Blue  
 txt: ![My Project](https://img.shields.io/badge/0.1_0.2_0.3_0.4_0.5_0.6_0.7_0.8_0.9-red)![My Project](https://img.shields.io/badge/1_1.1_1.2_1.3_1.4_1.5_1.6_1.7_1.8-green)![My Project](https://img.shields.io/badge/1.9_2_2.1_2.2_2.3_2.4_2.5_2.6_2.7-blue)
@@ -32,34 +32,35 @@ txt: ![My Project](https://img.shields.io/badge/0.1_1.3_..._2.5_3.7-747474)![My 
 
 ## Parameter Set up  
 ### Py2C set up
-
 - Step 1: in main.py at line: pyc_lib = Py2C("....."), fill .... part with the path to your file h5   
-
 - Step 2: set up param ở file py2c.py suit for your model
-  - *model_path* (string) is path of h5 model file (Note: This function support CNN and ANN)
-  - *type* (string) is type of data such as int, float, fxp (default: "fxp")
-  - *fxp_para* is parameter of fxp if you choose. It has 2 parameters (x,y) with x is sum of bits showing a data and y is integral part of the data
-  - *choose_only_output* is used to choose what type of your model's output. If your model's output is a number, then set it *True*. If your model's output is an array, then set it *False*. For example:  
-    - if you use "sigmoid" for activation function of your last dense layer, you will have output as an array. So set *choose_only_output* equal to *False*.  
-    - if you use "softmax" for activation function of your last dense layer, you will have output as an number. So set *choose_only_output* equal to *True*.  
-  - *ide* is used to choose what kind of IDE that you use. if you use Visual Studio, set ide = "vs". if you use Visual Studio Code or something else you can ignore it
-  - *num_of_output* is the number of output your model have. For example: to use inceptionV1 in Py2C tool, you need to set up *num_of_output* equal to 3  
+  - *model_path* (string) is the path of h5 model file (Note: This function supports CNN and ANN)
+  - *type* (string) is the type of data such as int, float, fxp (default: "fxp")
+  - *fxp_para* is the parameter of fxp if you choose. It has 2 parameters (x,y) with x as the sum of bits showing data and y as the integral part of the data
+  - *choose_only_output* is used to choose the type of output of your model. If your model's output is a number, then set it *True*. If your model's output is an array, then set it *False*. For example:  
+    - if you use "sigmoid" for the activation function of your last dense layer, you will have output as an array. So set *choose_only_output* equal to *False*.  
+    - if you use "softmax" for the activation function of your last dense layer, you will have output as a number. So set *choose_only_output* equal to *True*.  
+  - *ide* is used to choose what kind of IDE that you use. if you use Visual Studio, set ide = "vs". If you use Visual Studio Code or something else you can ignore it
+  - *num_of_output* is the number of output your model has. For example: to use inceptionV1 in Py2C tool, you need to set up *num_of_output* equal to 3  
     ![Image](https://github.com/user-attachments/assets/f273f789-266a-4d34-b086-3166949de4a5)  
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;InceptionV1 architecture  
-- Step 3: Run main.py
-### C++ code set up
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;InceptionV1 architecture  
+- Step 3: Run main.py  
+### C++ code  
+
+After running Py2C properly, you will have 10 files in total.  
+- Testbench (CNN_tb.cpp): it's testbench of all C++ code we have. we will run it in a C++ compiler to make sure that our C++ code is correct.  
+- C++ code (CNN.cpp, CNN.h, Conv.cpp, Conv.h, Dense.cpp, Dense.h, Pool.cpp, Pool.h): These are the files that we will put into Vitis HLS.  
+- Weight (Float_Weight.txt): this file contains all parameters of our model.  
+### Run C++ testbench 
 
 - Step 1: Open CNN_tb.cpp
-
-- Step 2: In line "#define NumberOfPicture ...", fill the... part with the number of your input.  
-
-- Step 3: In line "FILE* Input = fopen("X.txt", "r");" and "FILE* Output = fopen("Y.txt", "r");" , Replaces X.txt with your txt input, Y.txt with your txt label.
-
+- Step 2: Inline "#define NumberOfPicture ...", fill the... part with the number of your input.  
+- Step 3: In lines "FILE* Input = fopen("X.txt", "r");" and "FILE* Output = fopen("Y.txt", "r");", Replaces X.txt with your txt input, Y.txt with your text label.
 - Step 4: Run C++ code.
 
 ## Note:
-- Our tool only support DNN model built by Keras Functional API and h5 checkpoint.
-- Important: Your h5 checkpoint must be built on the same keras's and tenssorflow's version. otherwise it will easilly cause errors. then, your h5 checkpoint's version must be 2.10  
+- Our tool only supports DNN model built by Keras Functional API and h5 checkpoint.
+- Important: Your h5 checkpoint must be built on the same Keras's and TensorFlow's versions. otherwise, it will have the possibility to cause errors. then, your h5 checkpoint's version must be 2.10  
 
 ## Our Experiment
 - We've already done some experiments using HAR[3] and Cifar10[1] dataset combine with VGG16[4], Resnet34[5], InceptionV1[6] model. You can access it through the link below:  
