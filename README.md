@@ -67,7 +67,7 @@ After running Py2C properly, you will have 10 files in total.
 Link: https://drive.google.com/file/d/1xchjuCPuoTrw1F1vuslt91zmcvxyeu8_/view?usp=drive_link  
 
 ## Citation
-[1] Wagner, P., Strodthoff, N., Bousseljot, R., Samek, W., & Schaeffter, T. (2020). PTB-XL, a large publicly available electrocardiography dataset (version 1.0.1). PhysioNet. https://doi.org/10.13026/x4td-x982.  
+<!--[1] Wagner, P., Strodthoff, N., Bousseljot, R., Samek, W., & Schaeffter, T. (2020). PTB-XL, a large publicly available electrocardiography dataset (version 1.0.1). PhysioNet. https://doi.org/10.13026/x4td-x982.  
 [2] Learning Multiple Layers of Features from Tiny Images, Alex Krizhevsky, 2009.  
 [3] Anguita, D., Ghio, A., Oneto, L., Parra, X., & Reyes-Ortiz, J. L. (2013, April). A public domain dataset for human activity recognition using smartphones. In Esann (Vol. 3, p. 3).  
 [4] Simonyan, K. (2014). Very deep convolutional networks for large-scale image recognition. arXiv preprint arXiv:1409.1556.  
