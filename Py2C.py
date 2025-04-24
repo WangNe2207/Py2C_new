@@ -4,6 +4,8 @@ import struct
 import numpy as np
 import tensorflow as tf
 import math
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+print(tf.__version__)
 
 
 class Py2C:
@@ -29,7 +31,7 @@ class Py2C:
         - Write_FixedPoint_Weights_File function is to create Fixed Point Weights file
     """
 
-    def __init__(self, model_path, type="float", fxp_para=(21, 8),num_of_output=3, choose_only_output=True, ide="vs"):
+    def __init__(self, model_path, type="fxp", fxp_para=(21, 8),num_of_output=1, choose_only_output=True, ide=""):
         self.model = tf.keras.models.load_model(model_path, compile=False)
         assert fxp_para[0] > 0 and fxp_para[1] > 0, "the 1st or the 2nd Fxp Parameter must be more than zero!!!"
         assert fxp_para[0] >= fxp_para[1], "the 1st Fxp Parameter must be equal or more than the 2nd one!!!"
@@ -95,7 +97,7 @@ class Py2C:
 
     def convert2C(self):
         type_of_model = str(self.model)
-        if type_of_model.find("keras.engine.sequential.Sequential") >= 0:
+        if type_of_model.find("Sequential") >= 0:
             self.convert2C_seq()
         else:
             self.convert2C_func()
@@ -3604,7 +3606,7 @@ class Py2C:
                         include = "#include <cmath>\n"
                         type_sqrt = "exp"
                         out_dense = self.type + " &output_Dense" + str(self.index_output)
-                    result_acc = "\tint maxindex = 0;\n\t" + self.type + " max=out_Dense[0];\n\tloop_detect:\n\tfor (int i=0; i<" + str(out_shape) + "; i++){\n\t\tif (out_Dense[i]> max) {\n\t\t\tmax=out_Dense[i];\n\t\t\tmaxindex=i;\n\t\t}\n\t}\n\t" + self.type + " sum_exp_x = 0.0;\n\tfor(int i = 0; i <" + str(out_shape) + ";i++){\n\t\tsum_exp_x += " + type_sqrt + "(out_Dense[i]- out_Dense[maxindex]);\n\t}\n\t" + self.type + " max_value = out_Dense[maxindex];\n\tfor(int i = 0; i <" + str(out_shape) + ";i++){\n\t\tout_Dense[i] = " + type_sqrt + "(out_Dense[i] - max_value) / sum_exp_x;\n\t}\n\t" + self.type + " maxindex_2 = 0;\n\t" + self.type + " max_2 = out_Dense[0];\n\tfor(int i = 0; i <" + str(out_shape) + ";i++){\n\t\tif (out_Dense[i] > max_2) {\n\t\t\tmax_2 = out_Dense[i];\n\t\t\tmaxindex_2 = i;\n\t\t}\n\t}\n\toutput_Dense" + str(self.index_output) + " = maxindex_2;\n"
+                    result_acc = "\tint maxindex = 0;\n\t" + self.type + " max=out_Dense[0];\n\tloop_detect:\n\tfor (int i=0; i<" + str(out_shape) + "; i++){\n\t\tif (out_Dense[i]> max) {\n\t\t\tmax=out_Dense[i];\n\t\t\tmaxindex=i;\n\t\t}\n\t}\n\t" + self.type + " sum_exp_x = 0.0;\n\tfor(int i = 0; i <" + str(out_shape) + ";i++){\n\t\tsum_exp_x += " + type_sqrt + "(out_Dense[i]- out_Dense[maxindex]);\n\t}\n\t" + self.type + " max_value = out_Dense[maxindex];\n\tfor(int i = 0; i <" + str(out_shape) + ";i++){\n\t\tout_Dense[i] = " + type_sqrt + "(out_Dense[i] - max_value) / sum_exp_x;\n\t}\n\t" + self.type + " maxindex_2 = 0;\n\t" + self.type + " max_2 = out_Dense[0];\n\tfor(int i = 0; i <" + str(out_shape) + ";i++){\n\t\tif (out_Dense[i] > max_2) {\n\t\t\tmax_2 = out_Dense[i];\n\t\t\tmaxindex_2 = i;\n\t\t}\n\t}\n\toutput_Dense_" + str(self.index_output) + " = maxindex_2;\n"
 
                 else:
                     out_dense = self.type + " output_Dense[" + str(out_shape) + "]"
