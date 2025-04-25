@@ -1,7 +1,7 @@
 # Py2C
 
-This is the official Py2C tool of the paper "High-Level Synthesis from Python to RTL for Deep
-Neural Networks on SoC System"
+<!--This is the official Py2C tool of the paper "High-Level Synthesis from Python to RTL for Deep
+Neural Networks on SoC System" -->
 
 ## Version Requirements  
 - Tensorflow = 2.10 (**equal to 2.10**)
