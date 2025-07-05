@@ -1,17 +1,18 @@
 import os
 import struct
-
+from Tor2Ker import tor2ker
 import numpy as np
 import tensorflow as tf
 import math
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 print(tf.__version__)
+print(tf.keras.__version__)
+
 
 
 class Py2C:
     """
     The Py2C class has four inputs and nine functions.
-
         With input:
         - model_path (string) is path of h5 model file (Note: This function support CNN and ANN)
         - type (string) is type of data such as int, float, fxp (default: "fxp")
@@ -31,8 +32,17 @@ class Py2C:
         - Write_FixedPoint_Weights_File function is to create Fixed Point Weights file
     """
 
-    def __init__(self, model_path, type="fxp", fxp_para=(21, 8),num_of_output=1, choose_only_output=True, ide=""):
-        self.model = tf.keras.models.load_model(model_path, compile=False)
+    def __init__(self, model_path, torch = True, input_size = (9, 128), type="float", fxp_para=(21, 8),num_of_output=1, choose_only_output=True, ide="vs"):
+        self.torch = torch
+        self.input_size = input_size
+        if self.torch == False:
+            self.model = tf.keras.models.load_model(model_path, compile=False)
+        else:
+            convertTor = tor2ker(model_path, self.input_size)
+            kmodel = convertTor.convert()
+            kmodel.save("pytorch.h5")
+            self.model = tf.keras.models.load_model("pytorch.h5", compile=False)
+            print("test")
         assert fxp_para[0] > 0 and fxp_para[1] > 0, "the 1st or the 2nd Fxp Parameter must be more than zero!!!"
         assert fxp_para[0] >= fxp_para[1], "the 1st Fxp Parameter must be equal or more than the 2nd one!!!"
         if type == "fxp":
@@ -740,7 +750,7 @@ class Py2C:
                     self.indexBatch += 1
                     self.cnt_param += len(gamma) + len(beta) + len(moving_mean) + len(moving_variance)
 
-            if layer.find("Activation") >= 0 or layer.find("ReLU") >= 0:
+            if layer.find("Activation") >= 0 or layer.find("ReLU") >= 0 or layer.find("Softmax") >= 0:
                 found = 1
                 # 3D and 1D, FC layer
                 if len(self.model.layers[i - 1].input.shape) == 2:
@@ -750,9 +760,10 @@ class Py2C:
                         'name'] + "[" + str(in_shape) + "];\n"
                     if layer.find("ReLU") >= 0:
                         activation = "relu"
+                    elif layer.find("Softmax") >= 0:
+                        activation = "softmax"
                     else:
                         activation = self.config["layers"][i]['config']['activation']
-
 
                     if self.type == "fxp" and self.index == 0:
                         self.fxp_inc = self.fxp_include
@@ -777,22 +788,36 @@ class Py2C:
                         source = "if(Input_Activation[i] > 0){\n\t\t\tOutput_Activation[i] = Input_Activation[i];\n\t\t}else\n\t\t{\n\t\t\tOutput_Activation[i] = 0;\n\t\t}"
                     elif activation == "tanh":
                         source = "Output_Activation[i]=(2/(1 + " + type_sqrt + "(-2*Input_Activation[i])))-1"
+                    elif activation == "softmax":
+                        source = "\tint maxindex = 0;\n\t" + self.type + " max=Input_Activation[0];\n\tloop_detect:\n\tfor (int i=0; i<" + str(out_shape) + "; i++){\n\t\tif (Input_Activation[i]> max) {\n\t\t\tmax=Input_Activation[i];\n\t\t\tmaxindex=i;\n\t\t}\n\t}\n\t" + "\n\tOutput_Activation = maxindex;\n"
                     else:
                         source = "Output_Activation[i]=Input_Activation[i]"
 
-
-                    source_Conv_cc = self.fxp_inc + " void Activation" + str(self.indexActi) + "(" + str(
-                        self.type) + " Input_Activation[" + str(in_shape) + "], " + str(
-                        self.type) + " Output_Activation[" + str(out_shape) + "]){\n\tfor (int i = 0; i < " + str(
-                        out_shape) + "; i++){\n\t\t" + source + "\n\t}\n}\n"
-                    source_Conv_hh = self.fxp_inc + "void Activation" + str(self.indexActi) + "(" + str(
-                        self.type) + " Input_Activation[" + str(in_shape) + "], " + str(
-                        self.type) + " Output_Activation[" + str(out_shape) + "]);\n"
-                    self.full_source_CNN_cc.append(
-                        ["\tActivation" + str(self.indexActi) + "(", self.config["layers"][i]['config']['name']])
-                    self.full_source_Conv_cc.append(source_Conv_cc)
-                    self.full_source_Conv_hh.append(source_Conv_hh)
-                    self.indexActi += 1
+                    if activation != "softmax":
+                        source_Conv_cc = self.fxp_inc + " void Activation" + str(self.indexActi) + "(" + str(
+                            self.type) + " Input_Activation[" + str(in_shape) + "], " + str(
+                            self.type) + " Output_Activation[" + str(out_shape) + "]){\n\tfor (int i = 0; i < " + str(
+                            out_shape) + "; i++){\n\t\t" + source + "\n\t}\n}\n"
+                        source_Conv_hh = self.fxp_inc + "void Activation" + str(self.indexActi) + "(" + str(
+                            self.type) + " Input_Activation[" + str(in_shape) + "], " + str(
+                            self.type) + " Output_Activation[" + str(out_shape) + "]);\n"
+                        self.full_source_CNN_cc.append(
+                            ["\tActivation" + str(self.indexActi) + "(", self.config["layers"][i]['config']['name']])
+                        self.full_source_Conv_cc.append(source_Conv_cc)
+                        self.full_source_Conv_hh.append(source_Conv_hh)
+                        self.indexActi += 1
+                    else:
+                        source_Conv_cc = self.fxp_inc + " void Activation" + str(self.indexActi) + "(" + str(
+                            self.type) + " Input_Activation[" + str(in_shape) + "], " + str(
+                            self.type) + " &Output_Activation){\n\t" + source + "\n}\n"
+                        source_Conv_hh = self.fxp_inc + "void Activation" + str(self.indexActi) + "(" + str(
+                            self.type) + " Input_Activation[" + str(in_shape) + "], " + str(
+                            self.type) + " &Output_Activation);\n"
+                        self.full_source_CNN_cc.append(
+                            ["\tActivation" + str(self.indexActi) + "(", "OutModel0"])
+                        self.full_source_Conv_cc.append(source_Conv_cc)
+                        self.full_source_Conv_hh.append(source_Conv_hh)
+                        self.indexActi += 1
 
                 # 3D , Convolutional Layer
                 if len(self.model.layers[i - 1].input.shape) == 4:
@@ -1869,31 +1894,31 @@ class Py2C:
                 self.out[1] = str(out_shape)
 
         if len(self.model.layers[1].input.shape) == 4:
-            self.source_CNN += "void CNN(" + self.type + " InModel[" + str(self.model.layers[1].input.shape[depth_index] * self.model.layers[1].input.shape[height_index] *
-                self.model.layers[1].input.shape[width_index]) + "]," + self.type + self.out[0] + "," + self.type + " Weights[" + str(
+            self.source_CNN += "void CNN(" + self.type + " InModel[" + str(self.model.layers[0].input.shape[depth_index] * self.model.layers[0].input.shape[height_index] *
+                self.model.layers[0].input.shape[width_index]) + "]," + self.type + self.out[0] + "," + self.type + " Weights[" + str(
                 self.cnt_param) + "]){\n" + self.call_function + "}\n"
             self.source_CNN_hh = "void CNN(" + self.type + " InModel[" + str(
-                self.model.layers[1].input.shape[2] *
-                self.model.layers[1].input.shape[1] * self.model.layers[1].input.shape[
+                self.model.layers[0].input.shape[2] *
+                self.model.layers[0].input.shape[1] * self.model.layers[0].input.shape[
                     3]) + "]," + self.type + self.out[0] + "," + self.type + " Weights[" + str(
                 self.cnt_param) + "]);\n"
         if len(self.model.layers[1].input.shape) == 3:
             self.source_CNN += "void CNN(" + self.type + " InModel[" + str(
-                self.model.layers[1].input.shape[2] * self.model.layers[1].input.shape[1]) + "]," + self.type + \
+                self.model.layers[0].input.shape[2] * self.model.layers[0].input.shape[1]) + "]," + self.type + \
                                self.out[0] + "," + self.type + " Weights[" + str(
                 self.cnt_param) + "]){\n" + self.call_function + "}\n"
             self.source_CNN_hh = "void CNN(" + self.type + " InModel[" + str(
-                self.model.layers[1].input.shape[2] *
-                self.model.layers[1].input.shape[1]) + "]," + self.type + self.out[
+                self.model.layers[0].input.shape[2] *
+                self.model.layers[0].input.shape[1]) + "]," + self.type + self.out[
                                      0] + "," + self.type + " Weights[" + str(
                 self.cnt_param) + "]);\n"
         if len(self.model.layers[1].input.shape) == 2:
             self.source_CNN += "void CNN(" + self.type + " InModel[" + str(
-                self.model.layers[1].input.shape[1]) + "]," + self.type + self.out[
+                self.model.layers[0].input.shape[1]) + "]," + self.type + self.out[
                                    0] + "," + self.type + " Weights[" + str(
                 self.cnt_param) + "]){\n" + self.call_function + "}\n"
             self.source_CNN_hh = "void CNN(" + self.type + " InModel[" + str(
-                self.model.layers[1].input.shape[1]) + "]," + self.type + self.out[
+                self.model.layers[0].input.shape[1]) + "]," + self.type + self.out[
                                      0] + "," + self.type + " Weights[" + str(self.cnt_param) + "]);\n"
 
         ######################################### WRITING TESTBENCH PHARSE #############################################
@@ -2839,9 +2864,9 @@ class Py2C:
                         self.full_source_Pool_hh.append(source_Pool_hh)
                     else:
                         if self.config["layers"][i]['config']['padding'] == 'same':
-                            pad = math.floor((out_shape[1]*strides-(in_shape[1]-poolSize))/2)
+                            # pad = math.floor((out_shape[1]*strides-(in_shape[1]-poolSize))/2)
 
-                            # pad = 0.5
+                            pad = 0.5
                             self.call_function += "\t" + self.type + " " + "OutPadPool" + str(
                                 self.index_P2D) + "[" + str(
                                 int(in_shape[0] * (in_shape[1] + 2 * pad) * (in_shape[1] + 2 * pad))) + "];\n"
@@ -2981,8 +3006,8 @@ class Py2C:
                         self.full_source_Pool_hh.append(source_Pool_hh)
                     else:
                         if self.config["layers"][i]['config']['padding'] == 'same':
-                            pad = math.floor((out_shape[1]*strides-(in_shape[1]-poolSize))/2)
-                            # pad = 0.5
+                            # pad = math.floor((out_shape[1]*strides-(in_shape[1]-poolSize))/2)
+                            pad = 0.5
                             self.call_function += "\t" + self.type + " " + "OutPadPool" + str(
                                 self.index_P2D) + "[" + str(
                                 int(in_shape[0] * (in_shape[1] + 2 * pad) * (in_shape[1] + 2 * pad))) + "];\n"
@@ -3606,7 +3631,7 @@ class Py2C:
                         include = "#include <cmath>\n"
                         type_sqrt = "exp"
                         out_dense = self.type + " &output_Dense" + str(self.index_output)
-                    result_acc = "\tint maxindex = 0;\n\t" + self.type + " max=out_Dense[0];\n\tloop_detect:\n\tfor (int i=0; i<" + str(out_shape) + "; i++){\n\t\tif (out_Dense[i]> max) {\n\t\t\tmax=out_Dense[i];\n\t\t\tmaxindex=i;\n\t\t}\n\t}\n\t" + self.type + " sum_exp_x = 0.0;\n\tfor(int i = 0; i <" + str(out_shape) + ";i++){\n\t\tsum_exp_x += " + type_sqrt + "(out_Dense[i]- out_Dense[maxindex]);\n\t}\n\t" + self.type + " max_value = out_Dense[maxindex];\n\tfor(int i = 0; i <" + str(out_shape) + ";i++){\n\t\tout_Dense[i] = " + type_sqrt + "(out_Dense[i] - max_value) / sum_exp_x;\n\t}\n\t" + self.type + " maxindex_2 = 0;\n\t" + self.type + " max_2 = out_Dense[0];\n\tfor(int i = 0; i <" + str(out_shape) + ";i++){\n\t\tif (out_Dense[i] > max_2) {\n\t\t\tmax_2 = out_Dense[i];\n\t\t\tmaxindex_2 = i;\n\t\t}\n\t}\n\toutput_Dense_" + str(self.index_output) + " = maxindex_2;\n"
+                    result_acc = "\tint maxindex = 0;\n\t" + self.type + " max=out_Dense[0];\n\tloop_detect:\n\tfor (int i=0; i<" + str(out_shape) + "; i++){\n\t\tif (out_Dense[i]> max) {\n\t\t\tmax=out_Dense[i];\n\t\t\tmaxindex=i;\n\t\t}\n\t}\n\t" + self.type + " sum_exp_x = 0.0;\n\tfor(int i = 0; i <" + str(out_shape) + ";i++){\n\t\tsum_exp_x += " + type_sqrt + "(out_Dense[i]- out_Dense[maxindex]);\n\t}\n\t" + self.type + " max_value = out_Dense[maxindex];\n\tfor(int i = 0; i <" + str(out_shape) + ";i++){\n\t\tout_Dense[i] = " + type_sqrt + "(out_Dense[i] - max_value) / sum_exp_x;\n\t}\n\t" + self.type + " maxindex_2 = 0;\n\t" + self.type + " max_2 = out_Dense[0];\n\tfor(int i = 0; i <" + str(out_shape) + ";i++){\n\t\tif (out_Dense[i] > max_2) {\n\t\t\tmax_2 = out_Dense[i];\n\t\t\tmaxindex_2 = i;\n\t\t}\n\t}\n\toutput_Dense" + str(self.index_output) + " = maxindex_2;\n"
 
                 else:
                     out_dense = self.type + " output_Dense[" + str(out_shape) + "]"
